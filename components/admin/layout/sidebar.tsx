@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   UserPlus,
@@ -54,7 +54,7 @@ const navigation: NavGroup[] = [
   {
     label: "Pendaftaran Pasien",
     items: [
-      { name: "Daftar Pasien", href: "/admin/pasien", icon: Users },
+      { name: "Daftar Pasien Hari Ini", href: "/admin/pasien", icon: Users },
       { name: "Pendaftaran Baru", href: "/admin/pasien/baru", icon: UserPlus },
       { name: "Antrian Hari Ini", href: "/admin/antrian", icon: Calendar },
     ],
@@ -127,18 +127,39 @@ const navigation: NavGroup[] = [
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, open, onOpenChange }: SidebarProps) {
   const pathname = usePathname();
 
+  // Close sidebar on mobile when navigating
+  useEffect(() => {
+    if (open && onOpenChange) {
+      onOpenChange(false);
+    }
+  }, [pathname]);
+
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 z-40 h-screen border-r bg-card transition-[width] duration-200",
-        collapsed ? "w-16" : "w-64"
+    <>
+      {/* Mobile Backdrop */}
+      {open && (
+        <div 
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          onClick={() => onOpenChange?.(false)}
+        />
       )}
-    >
+
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-50 h-screen border-r bg-card transition-all duration-300 ease-in-out",
+          collapsed ? "w-16" : "w-64",
+          // Mobile classes
+          "max-lg:fixed",
+          open ? "max-lg:translate-x-0" : "max-lg:-translate-x-full"
+        )}
+      >
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-48 items-center border-b px-3">
@@ -169,61 +190,63 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-3">
-          {navigation.map((group, groupIndex) => (
-            <div key={group.label} className={cn(groupIndex > 0 && "mt-4")}>
-              {/* Group Label */}
-              {!collapsed && (
-                <div className="mb-1.5 px-4">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    {group.label}
-                  </span>
+          {(() => {
+            // Find all items that match the current pathname
+            const allItems = navigation.flatMap(g => g.items);
+            const matches = allItems.filter(item => 
+              pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href + "/"))
+            );
+            
+            // The best match is the one with the longest href
+            const bestMatch = matches.sort((a, b) => b.href.length - a.href.length)[0];
+
+            return navigation.map((group, groupIndex) => (
+              <div key={group.label} className={cn(groupIndex > 0 && "mt-4")}>
+                {!collapsed && (
+                  <div className="mb-1.5 px-4">
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                      {group.label}
+                    </span>
+                  </div>
+                )}
+                {collapsed && groupIndex > 0 && (
+                  <div className="mx-2 mb-2 border-t" />
+                )}
+
+                <div className="space-y-0.5 px-2">
+                  {group.items.map((item) => {
+                    const isActive = bestMatch?.href === item.href || pathname === item.href;
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        title={collapsed ? item.name : undefined}
+                        className={cn(
+                          "group relative flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
+                          isActive
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          collapsed && "justify-center px-2"
+                        )}
+                      >
+                        {isActive && (
+                          <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-primary" />
+                        )}
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && <span>{item.name}</span>}
+                        {collapsed && (
+                          <span className="absolute left-full ml-2 hidden rounded-md bg-foreground px-2 py-1 text-xs text-background group-hover:block whitespace-nowrap z-50">
+                            {item.name}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
                 </div>
-              )}
-              {collapsed && groupIndex > 0 && (
-                <div className="mx-2 mb-2 border-t" />
-              )}
-
-              {/* Group Items */}
-              <div className="space-y-0.5 px-2">
-                {group.items.map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== "/admin" && pathname.startsWith(item.href));
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      title={collapsed ? item.name : undefined}
-                      className={cn(
-                        "group relative flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                        collapsed && "justify-center px-2"
-                      )}
-                    >
-                      {/* Active indicator */}
-                      {isActive && (
-                        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-primary" />
-                      )}
-                      
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      
-                      {!collapsed && <span>{item.name}</span>}
-
-                      {/* Tooltip on collapsed mode */}
-                      {collapsed && (
-                        <span className="absolute left-full ml-2 hidden rounded-md bg-foreground px-2 py-1 text-xs text-background group-hover:block whitespace-nowrap z-50">
-                          {item.name}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
               </div>
-            </div>
-          ))}
+            ));
+          })()}
         </nav>
 
         {/* Collapse Button */}
@@ -245,5 +268,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </div>
       </div>
     </aside>
+    </>
   );
 }

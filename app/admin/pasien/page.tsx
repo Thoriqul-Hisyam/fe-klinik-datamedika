@@ -11,6 +11,7 @@ import {
   Edit,
   X,
   UserPlus,
+  Users,
   Calendar,
   Building2,
   CreditCard,
@@ -181,10 +182,20 @@ export default function PendaftaranPasienPage() {
             Kelola pendaftaran pasien klinik
           </p>
         </div>
-        <Button size="sm">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Pendaftaran Baru
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/admin/pasien/registrasi">
+              <Users className="h-4 w-4 mr-2" />
+              Daftar Pasien Lama
+            </Link>
+          </Button>
+          <Button size="sm" asChild>
+            <Link href="/admin/pasien/baru">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Pasien Baru
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
