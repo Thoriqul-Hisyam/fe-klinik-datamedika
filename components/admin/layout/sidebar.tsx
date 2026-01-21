@@ -141,13 +141,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     >
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-20 items-center border-b px-3">
+        <div className="flex h-48 items-center border-b px-3">
             {!collapsed ? (
                <Link href="/admin" className="flex items-center gap-2 px-2">
                  <img 
                     src="/images/logo.png" 
                     alt="DataMedika" 
-                    className="h-36 w-auto object-contain"
+                    className="h-48 w-auto object-contain"
                     onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                         const fallback = (e.target as HTMLImageElement).parentElement?.querySelector('.logo-fallback');
