@@ -14,6 +14,7 @@ import {
   Calendar,
   Building2,
   CreditCard,
+  FileText,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,11 +36,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { generateNoReg } from "@/lib/utils";
+import Link from "next/link";
 
 // Mock data for patient registrations
 const registrations = [
   {
     id: "REG001",
+    noReg: "NoReg202601200830152024001",
     noRM: "RM-2024-001",
     nik: "3201234567890001",
     nama: "Ahmad Rizki",
@@ -51,6 +55,7 @@ const registrations = [
   },
   {
     id: "REG002",
+    noReg: "NoReg202601200915222024015",
     noRM: "RM-2024-015",
     nik: "3201234567890002",
     nama: "Siti Nurhaliza",
@@ -62,6 +67,7 @@ const registrations = [
   },
   {
     id: "REG003",
+    noReg: "NoReg202601201010052024023",
     noRM: "RM-2024-023",
     nik: "3201234567890003",
     nama: "Dewi Lestari",
@@ -73,6 +79,7 @@ const registrations = [
   },
   {
     id: "REG004",
+    noReg: "NoReg202601201140302024045",
     noRM: "RM-2024-045",
     nik: "3201234567890004",
     nama: "Eko Prasetyo",
@@ -84,6 +91,7 @@ const registrations = [
   },
   {
     id: "REG005",
+    noReg: "NoReg202601201320452024067",
     noRM: "RM-2024-067",
     nik: "3201234567890005",
     nama: "Fitri Handayani",
@@ -92,61 +100,6 @@ const registrations = [
     dokter: "dr. Maya, Sp.OG",
     pembayaran: "Umum",
     status: "batal",
-  },
-  {
-    id: "REG006",
-    noRM: "RM-2024-089",
-    nik: "3201234567890006",
-    nama: "Gunawan Wibowo",
-    tanggal: "2026-01-19",
-    poli: "Poli Dalam",
-    dokter: "dr. Hendra, Sp.PD",
-    pembayaran: "BPJS",
-    status: "selesai",
-  },
-  {
-    id: "REG007",
-    noRM: "RM-2024-091",
-    nik: "3201234567890007",
-    nama: "Hana Pertiwi",
-    tanggal: "2026-01-19",
-    poli: "Poli Umum",
-    dokter: "dr. Sarah",
-    pembayaran: "Umum",
-    status: "selesai",
-  },
-  {
-    id: "REG008",
-    noRM: "RM-2024-102",
-    nik: "3201234567890008",
-    nama: "Irwan Setiawan",
-    tanggal: "2026-01-19",
-    poli: "Poli Mata",
-    dokter: "dr. Lisa, Sp.M",
-    pembayaran: "BPJS",
-    status: "selesai",
-  },
-  {
-    id: "REG009",
-    noRM: "RM-2024-115",
-    nik: "3201234567890009",
-    nama: "Julia Rahmawati",
-    tanggal: "2026-01-18",
-    poli: "Poli Gigi",
-    dokter: "drg. Budi",
-    pembayaran: "Asuransi",
-    status: "selesai",
-  },
-  {
-    id: "REG010",
-    noRM: "RM-2024-128",
-    nik: "3201234567890010",
-    nama: "Kevin Pratama",
-    tanggal: "2026-01-18",
-    poli: "Poli Anak",
-    dokter: "dr. Rina, Sp.A",
-    pembayaran: "Umum",
-    status: "selesai",
   },
 ];
 
@@ -421,6 +374,17 @@ export default function PendaftaranPasienPage() {
                                 Aksi
                               </DropdownMenuLabel>
                               <DropdownMenuSeparator />
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href={`/admin/emr/pasien/${
+                                    reg.noReg || generateNoReg(reg.noRM)
+                                  }`}
+                                  className="flex items-center w-full"
+                                >
+                                  <FileText className="h-3.5 w-3.5 mr-2" />
+                                  Buka RME
+                                </Link>
+                              </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Eye className="h-3.5 w-3.5 mr-2" />
                                 Lihat Detail

@@ -38,10 +38,11 @@ const QUADRANTS = {
 };
 
 type ToothCondition = "normal" | "caries" | "filling" | "missing" | "crown";
+type ToothSurface = "atas" | "bawah" | "kiri" | "kanan" | "tengah";
 
 interface ToothState {
   id: number;
-  condition: ToothCondition;
+  surfaces: Partial<Record<ToothSurface, ToothCondition>>;
   notes: string;
 }
 
@@ -51,15 +52,29 @@ export function OdontogramSection() {
   const [isFinalized, setIsFinalized] = useState(false);
 
   // Modal temporary state
-  const [tempCondition, setTempCondition] = useState<ToothCondition>("normal");
+  const [tempSurfaces, setTempSurfaces] = useState<Partial<Record<ToothSurface, ToothCondition>>>({});
   const [tempNotes, setTempNotes] = useState("");
+  const [activeCondition, setActiveCondition] = useState<ToothCondition>("caries");
 
   const handleToothClick = (id: number) => {
     if (isFinalized) return;
-    const current = teeth[id] || { id, condition: "normal", notes: "" };
+    const current = teeth[id] || { id, surfaces: {}, notes: "" };
     setSelectedTooth(id);
-    setTempCondition(current.condition);
+    setTempSurfaces(current.surfaces);
     setTempNotes(current.notes);
+  };
+
+  const toggleSurface = (surface: ToothSurface) => {
+    setTempSurfaces((prev) => {
+      const current = prev[surface];
+      if (current === activeCondition) {
+        // Toggle off if clicking the same condition
+        const next = { ...prev };
+        delete next[surface];
+        return next;
+      }
+      return { ...prev, [surface]: activeCondition };
+    });
   };
 
   const handleSaveTooth = () => {
@@ -68,27 +83,27 @@ export function OdontogramSection() {
       ...prev,
       [selectedTooth]: {
         id: selectedTooth,
-        condition: tempCondition,
+        surfaces: tempSurfaces,
         notes: tempNotes,
       },
     }));
     setSelectedTooth(null);
   };
 
-  const getToothColor = (condition: ToothCondition) => {
+  const getSurfaceColor = (condition: ToothCondition | undefined) => {
     switch (condition) {
       case "caries": return "fill-red-500 stroke-red-700";
       case "filling": return "fill-green-500 stroke-green-700";
-      case "missing": return "fill-neutral-200 stroke-neutral-400 opacity-50";
       case "crown": return "fill-blue-500 stroke-blue-700";
+      case "missing": return "fill-neutral-200 stroke-neutral-400 opacity-50";
       default: return "fill-white stroke-neutral-300";
     }
   };
 
   const ToothIcon = ({ id }: { id: number }) => {
     const state = teeth[id];
-    const colorClass = getToothColor(state?.condition || "normal");
-    const isMissing = state?.condition === "missing";
+    const surfaces = state?.surfaces || {};
+    const isMissing = Object.values(surfaces).some(c => c === "missing");
 
     return (
       <div 
@@ -100,24 +115,36 @@ export function OdontogramSection() {
       >
         <span className="text-[10px] font-bold text-muted-foreground">{id}</span>
         <svg width="32" height="32" viewBox="0 0 32 32" className="drop-shadow-sm">
-          {/* Main tooth body - simplified as a rectangle for clinical representation */}
-          <rect 
-            x="4" y="4" width="24" height="24" rx="4" 
-            className={cn(colorClass, "stroke-2")}
-          />
-          {/* Internal surfaces marking (simplified) */}
-          <line x1="10" y1="4" x2="10" y2="28" className="stroke-white/30 stroke-1" />
-          <line x1="22" y1="4" x2="22" y2="28" className="stroke-white/30 stroke-1" />
-          <line x1="4" y1="10" x2="28" y2="10" className="stroke-white/30 stroke-1" />
-          <line x1="4" y1="22" x2="28" y2="22" className="stroke-white/30 stroke-1" />
+          {/* Surface Polygons */}
+          <polygon points="0,0 32,0 24,8 8,8" className={cn(getSurfaceColor(surfaces.atas), "stroke-1")} />
+          <polygon points="8,24 24,24 32,32 0,32" className={cn(getSurfaceColor(surfaces.bawah), "stroke-1")} />
+          <polygon points="0,0 8,8 8,24 0,32" className={cn(getSurfaceColor(surfaces.kiri), "stroke-1")} />
+          <polygon points="24,8 32,0 32,32 24,24" className={cn(getSurfaceColor(surfaces.kanan), "stroke-1")} />
+          <rect x="8" y="8" width="16" height="16" className={cn(getSurfaceColor(surfaces.tengah), "stroke-1")} />
           
           {isMissing && (
-            <path d="M4 4 L28 28 M28 4 L4 28" className="stroke-neutral-500 stroke-2" />
+            <path d="M0 0 L32 32 M32 0 L0 32" className="stroke-neutral-500 stroke-2 pointer-events-none" />
           )}
         </svg>
       </div>
     );
   };
+
+  const SurfacePath = ({ points, surface, current, onClick }: { 
+    points: string, 
+    surface: ToothSurface, 
+    current: ToothCondition | undefined,
+    onClick: () => void 
+  }) => (
+    <polygon 
+      points={points} 
+      className={cn(
+        getSurfaceColor(current), 
+        "stroke-1 transition-colors hover:opacity-80"
+      )}
+      onClick={onClick}
+    />
+  );
 
   return (
     <div className="space-y-6">
@@ -186,11 +213,17 @@ export function OdontogramSection() {
       {/* Conditions Summary */}
       {Object.keys(teeth).length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {Object.values(teeth).filter(t => t.condition !== 'normal').map(t => (
+          {Object.values(teeth).filter(t => Object.keys(t.surfaces).length > 0).map(t => (
             <div key={t.id} className="p-3 border rounded-lg bg-muted/30 flex items-start gap-3">
               <Badge variant="outline" className="h-6 w-8 justify-center shrink-0">{t.id}</Badge>
               <div className="space-y-1">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.condition}</p>
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(t.surfaces).map(([surface, cond]) => (
+                    <Badge key={surface} variant="secondary" className="text-[9px] uppercase">
+                      {surface}: {cond}
+                    </Badge>
+                  ))}
+                </div>
                 <p className="text-sm">{t.notes || "Tidak ada catatan."}</p>
               </div>
             </div>
@@ -207,30 +240,81 @@ export function OdontogramSection() {
               <Badge variant="outline">FDI Notation</Badge>
             </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label>Kondisi Klinis</Label>
-              <Select value={tempCondition} onValueChange={(v: ToothCondition) => setTempCondition(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="normal">Normal / Sehat</SelectItem>
-                  <SelectItem value="caries">Caries (Karies)</SelectItem>
-                  <SelectItem value="filling">Filling (Tumpat)</SelectItem>
-                  <SelectItem value="missing">Missing (Hilang)</SelectItem>
-                  <SelectItem value="crown">Crown (Mahkota Jaket)</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="grid gap-6 py-4">
+            <div className="flex justify-center py-4 bg-muted/20 rounded-lg">
+              <div className="relative w-32 h-32">
+                 <svg viewBox="0 0 32 32" className="w-full h-full drop-shadow-md cursor-pointer">
+                    <SurfacePath 
+                      points="0,0 32,0 24,8 8,8" 
+                      surface="atas" 
+                      current={tempSurfaces.atas} 
+                      onClick={() => toggleSurface("atas")} 
+                    />
+                    <SurfacePath 
+                      points="8,24 24,24 32,32 0,32" 
+                      surface="bawah" 
+                      current={tempSurfaces.bawah} 
+                      onClick={() => toggleSurface("bawah")} 
+                    />
+                    <SurfacePath 
+                      points="0,0 8,8 8,24 0,32" 
+                      surface="kiri" 
+                      current={tempSurfaces.kiri} 
+                      onClick={() => toggleSurface("kiri")} 
+                    />
+                    <SurfacePath 
+                      points="24,8 32,0 32,32 24,24" 
+                      surface="kanan" 
+                      current={tempSurfaces.kanan} 
+                      onClick={() => toggleSurface("kanan")} 
+                    />
+                    <rect 
+                      x="8" y="8" width="16" height="16" 
+                      className={cn(getSurfaceColor(tempSurfaces.tengah), "stroke-1 transition-colors hover:opacity-80")}
+                      onClick={() => toggleSurface("tengah")}
+                    />
+                 </svg>
+                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="text-[10px] font-bold text-muted-foreground/50 opacity-0 group-hover:opacity-100 uppercase tracking-tighter">Click to toggle</span>
+                 </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Catatan Gigi</Label>
-              <Textarea 
-                placeholder="Tambahkan detail klinis..."
-                value={tempNotes}
-                onChange={(e) => setTempNotes(e.target.value)}
-                rows={3}
-              />
+
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2 justify-center">
+                 {["caries", "filling", "crown", "missing"].map((cond) => (
+                    <Button 
+                      key={cond}
+                      variant="outline" 
+                      size="sm" 
+                      className={cn(
+                        "h-8 text-[10px] uppercase",
+                        activeCondition === cond && "bg-primary text-primary-foreground"
+                      )}
+                      onClick={() => setActiveCondition(cond as ToothCondition)}
+                    >
+                      {cond}
+                    </Button>
+                 ))}
+                 <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 text-[10px] uppercase"
+                    onClick={() => { setTempSurfaces({}); }}
+                  >
+                    Reset
+                  </Button>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Catatan Gigi</Label>
+                <Textarea 
+                  placeholder="Tambahkan detail klinis..."
+                  value={tempNotes}
+                  onChange={(e) => setTempNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -253,3 +337,4 @@ function LegendItem({ color, label, isX }: { color: string, label: string, isX?:
     </div>
   );
 }
+
