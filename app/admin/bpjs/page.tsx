@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Server,
   Users,
+  User,
   Building2,
   Calendar,
   X,
@@ -66,10 +67,31 @@ const sepList = [
 ];
 
 export default function BpjsIntegrationPage() {
+  // Member Data Type
+  interface MemberData {
+    noKartu: string;
+    nik: string;
+    nama: string;
+    tglLahir: string;
+    statusPeserta: {
+      kode: string;
+      keterangan: string;
+    };
+    jenisPeserta: {
+      kode: string;
+      keterangan: string;
+    };
+    hakKelas: {
+      kode: string;
+      keterangan: string;
+    };
+    faskes1: string;
+  }
+
   const [isConnected, setIsConnected] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [searchNoKartu, setSearchNoKartu] = useState("");
-  const [memberData, setMemberData] = useState<any>(null);
+  const [memberData, setMemberData] = useState<MemberData | null>(null);
   const [loadingCheck, setLoadingCheck] = useState(false);
 
   // Simulate Member Check
