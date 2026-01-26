@@ -12,8 +12,10 @@ import {
   Stethoscope,
   Activity,
   FileText,
+  Edit3,
   AlertCircle,
   CheckCircle2,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -109,6 +111,22 @@ export function CpptSection() {
     });
   };
 
+  const handleCopy = (entry: SoapEntry) => {
+    setEditingId(null); // Always a new entry when copying
+    setIsAdding(true);
+    setFormData({
+      subjective: entry.subjective,
+      objective: entry.objective,
+      assessment: entry.assessment,
+      plan: entry.plan,
+    });
+    // Scroll to form (top of the section)
+    const element = document.getElementById("cppt-form-top");
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const handleCancel = () => {
     setIsAdding(false);
     setEditingId(null);
@@ -167,7 +185,7 @@ export function CpptSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="cppt-form-top">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <FileText className="h-5 w-5" />
@@ -181,186 +199,244 @@ export function CpptSection() {
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Timeline List */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Add/Edit Form */}
+      <div className="grid gap-6 lg:grid-cols-5 flex-1 overflow-hidden">
+        {/* Left Column: Input Form */}
+        <div className="lg:col-span-2 space-y-4 overflow-y-auto pr-2">
+          {!isAdding && (
+            <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-xl p-8 text-center bg-muted/10">
+              <FileText className="h-10 w-10 text-muted-foreground mb-4 opacity-20" />
+              <h4 className="font-medium text-muted-foreground">Siap Mengisi CPPT?</h4>
+              <p className="text-sm text-muted-foreground/60 mb-6">Klik tombol dibawah untuk mulai mencatat perkembangan pasien hari ini.</p>
+              <Button onClick={handleAdd} size="lg" className="rounded-full shadow-lg hover:shadow-xl transition-all">
+                <Plus className="h-5 w-5 mr-2" />
+                Mulai Catat CPPT
+              </Button>
+            </div>
+          )}
+
           {isAdding && (
-            <Card className="border-2 border-primary/20 shadow-lg relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+            <Card className="border-2 border-primary/20 shadow-xl relative overflow-hidden h-full flex flex-col">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-primary" />
               <CardHeader className="pb-3 bg-muted/30">
-                <CardTitle className="text-sm font-medium flex items-center justify-between">
-                  {editingId ? "Edit Catatan" : "Catatan Baru"}
-                  <div className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
-                    <User className="h-3 w-3" />
-                    {CURRENT_USER}
-                    <span className="text-muted-foreground/30">|</span>
-                    <Clock className="h-3 w-3" />
-                    {new Date().toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })}
+                <CardTitle className="text-sm font-bold flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Edit3 className="h-4 w-4 text-primary" />
+                    {editingId ? "EDIT CATATAN CPPT" : "CATATAN CPPT BARU"}
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] font-normal text-muted-foreground uppercase tracking-wider">
+                    <span className="flex items-center gap-1.5">
+                      <User className="h-3 w-3" />
+                      {CURRENT_USER}
+                    </span>
+                    <span className="text-muted-foreground/30 text-lg">|</span>
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="h-3 w-3" />
+                      {new Date().toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+              <CardContent className="space-y-4 pt-4 flex-1 overflow-y-auto px-4">
                 <div className="grid gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="s" className="text-xs font-bold text-muted-foreground uppercase">Subjective (S)</Label>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold w-7 h-7 flex items-center justify-center p-0 rounded-full text-xs">S</Badge>
+                      <Label htmlFor="s" className="text-xs font-bold text-muted-foreground uppercase">Subjective</Label>
+                    </div>
                     <Textarea
                       id="s"
                       placeholder="Keluhan pasien, riwayat, dll..."
                       value={formData.subjective}
                       onChange={(e) => setFormData({ ...formData, subjective: e.target.value })}
-                      className="resize-none min-h-[80px]"
+                      className="resize-none min-h-[100px] border-muted-foreground/20 focus-visible:ring-primary/30"
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="o" className="text-xs font-bold text-muted-foreground uppercase">Objective (O)</Label>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold w-7 h-7 flex items-center justify-center p-0 rounded-full text-xs">O</Badge>
+                      <Label htmlFor="o" className="text-xs font-bold text-muted-foreground uppercase">Objective</Label>
+                    </div>
                     <Textarea
                       id="o"
                       placeholder="Hasil pemeriksaan fisik, lab, dll..."
                       value={formData.objective}
                       onChange={(e) => setFormData({ ...formData, objective: e.target.value })}
-                      className="resize-none min-h-[80px]"
+                      className="resize-none min-h-[100px] border-muted-foreground/20 focus-visible:ring-primary/30"
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="a" className="text-xs font-bold text-muted-foreground uppercase">Assessment (A)</Label>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold w-7 h-7 flex items-center justify-center p-0 rounded-full text-xs">A</Badge>
+                      <Label htmlFor="a" className="text-xs font-bold text-muted-foreground uppercase">Assessment</Label>
+                    </div>
                     <Textarea
                       id="a"
                       placeholder="Diagnosa kerja, masalah, dll..."
                       value={formData.assessment}
                       onChange={(e) => setFormData({ ...formData, assessment: e.target.value })}
-                      className="resize-none min-h-[60px]"
+                      className="resize-none min-h-[80px] border-muted-foreground/20 focus-visible:ring-primary/30"
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="p" className="text-xs font-bold text-muted-foreground uppercase">Plan (P)</Label>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold w-7 h-7 flex items-center justify-center p-0 rounded-full text-xs">P</Badge>
+                      <Label htmlFor="p" className="text-xs font-bold text-muted-foreground uppercase">Plan</Label>
+                    </div>
                     <Textarea
                       id="p"
                       placeholder="Rencana terapi, tindakan, edukasi, dll..."
                       value={formData.plan}
                       onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
-                      className="resize-none min-h-[80px]"
+                      className="resize-none min-h-[100px] border-muted-foreground/20 focus-visible:ring-primary/30"
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="ghost" size="sm" onClick={handleCancel}>
-                    Batal
-                  </Button>
-                  <Button size="sm" onClick={handleSave}>
-                    <Save className="h-4 w-4 mr-2" />
-                    Simpan CPPT
-                  </Button>
-                </div>
               </CardContent>
+              <div className="p-4 border-t bg-muted/10 flex justify-end gap-3">
+                <Button variant="ghost" className="hover:bg-destructive/10 hover:text-destructive" onClick={handleCancel}>
+                  <X className="h-4 w-4 mr-2" />
+                  Batal
+                </Button>
+                <Button onClick={handleSave} className="px-8 shadow-md">
+                  <Save className="h-4 w-4 mr-2" />
+                  Simpan CPPT
+                </Button>
+              </div>
             </Card>
           )}
-
-          {/* Timeline Items */}
-          <div className="relative pl-6 border-l-2 border-muted space-y-8">
-            {entries.map((entry) => (
-              <div key={entry.id} className="relative">
-                 {/* Timeline Dot */}
-                <div className={cn(
-                  "absolute -left-[31px] top-4 h-4 w-4 rounded-full border-2 border-background",
-                   entry.role === 'Dokter' ? "bg-primary" : "bg-muted-foreground"
-                )} />
-                
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardHeader className="py-3 px-4 flex flex-row items-start justify-between space-y-0 bg-muted/20">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className={cn("text-xs", entry.role === 'Dokter' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
-                            {entry.author.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">{entry.author}</span>
-                            <Badge variant={getRoleBadgeVariant(entry.role)} className="text-[10px] px-1.5 py-0 h-5">
-                                {entry.role}
-                            </Badge>
-                        </div>
-                        <div className="flex items-center text-xs text-muted-foreground mt-0.5">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {entry.timestamp}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Actions */}
-                    {entry.author === CURRENT_USER && (
-                        <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => handleEdit(entry)}>
-                                <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(entry.id)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                        </div>
-                    )}
-                  </CardHeader>
-                  <CardContent className="p-4 grid gap-4 text-sm">
-                    <div className="grid grid-cols-[24px_1fr] gap-2">
-                        <span className="font-bold text-muted-foreground">S</span>
-                        <p className="whitespace-pre-wrap">{entry.subjective}</p>
-                    </div>
-                     <Separator className="bg-border/50" />
-                    <div className="grid grid-cols-[24px_1fr] gap-2">
-                        <span className="font-bold text-muted-foreground">O</span>
-                        <p className="whitespace-pre-wrap">{entry.objective}</p>
-                    </div>
-                    <Separator className="bg-border/50" />
-                    <div className="grid grid-cols-[24px_1fr] gap-2">
-                        <span className="font-bold text-muted-foreground">A</span>
-                        <p className="whitespace-pre-wrap">{entry.assessment}</p>
-                    </div>
-                    <Separator className="bg-border/50" />
-                    <div className="grid grid-cols-[24px_1fr] gap-2">
-                        <span className="font-bold text-muted-foreground">P</span>
-                        <p className="whitespace-pre-wrap">{entry.plan}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* Sidebar Info (Optional) */}
-        <div className="hidden lg:block space-y-4">
-             <Card>
-                <CardHeader className="py-3">
-                    <CardTitle className="text-sm">Filter</CardTitle>
-                </CardHeader>
-                <CardContent className="py-3 text-sm space-y-2">
-                    <div className="flex items-center justify-between">
-                         <Label className="font-normal text-muted-foreground">Tampilkan</Label>
-                         <Select defaultValue="all">
-                            <SelectTrigger className="w-[120px] h-8 text-xs">
-                                <SelectValue placeholder="Semua" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua</SelectItem>
-                                <SelectItem value="dokter">Dokter</SelectItem>
-                                <SelectItem value="perawat">Perawat</SelectItem>
-                            </SelectContent>
-                         </Select>
-                    </div>
-                </CardContent>
-             </Card>
-             
-             <Card className="bg-blue-50/50 border-blue-100">
-                 <CardContent className="p-4 flex gap-3">
-                     <AlertCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-                     <div className="space-y-1">
-                         <h4 className="text-sm font-semibold text-blue-900">Instruksi DPJP</h4>
-                         <p className="text-xs text-blue-700 leading-relaxed">
-                             Harap pantau balance cairan ketat dan laporkan jika urin output {"<"} 0.5cc/kgBB/jam.
-                         </p>
-                     </div>
-                 </CardContent>
-             </Card>
+        {/* Right Column: History Timeline */}
+        <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+          <div className="flex items-center justify-between mb-4 px-1">
+             <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Riwayat Perkembangan</h4>
+             </div>
+             <Select defaultValue="all">
+                <SelectTrigger className="w-[140px] h-8 text-xs bg-background">
+                    <SelectValue placeholder="Semua Profesi" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Semua Profesi</SelectItem>
+                    <SelectItem value="dokter">Dokter</SelectItem>
+                    <SelectItem value="perawat">Perawat</SelectItem>
+                </SelectContent>
+             </Select>
+          </div>
+
+          <div className="flex-1 overflow-y-auto pr-2 space-y-6 relative pl-6 border-l-2 border-muted">
+            {entries.length === 0 ? (
+               <div className="text-center py-12">
+                  <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-20" />
+                  <p className="text-sm text-muted-foreground">Belum ada riwayat CPPT.</p>
+               </div>
+            ) : (
+              entries.map((entry) => (
+                <div key={entry.id} className="relative group">
+                  {/* Timeline Dot */}
+                  <div className={cn(
+                    "absolute -left-[31px] top-4 h-4 w-4 rounded-full border-2 border-background",
+                    entry.role === 'Dokter' ? "bg-primary" : "bg-muted-foreground"
+                  )} />
+                  
+                  <Card className="group-hover:shadow-md border-muted/60 transition-all duration-300">
+                    <CardHeader className="py-2.5 px-4 flex flex-row items-center justify-between space-y-0 bg-muted/20">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-7 w-7 ring-2 ring-background">
+                          <AvatarFallback className={cn("text-[10px] font-bold", entry.role === 'Dokter' ? "bg-primary text-primary-foreground" : "bg-muted-foreground text-white")}>
+                              {entry.author.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold leading-none">{entry.author}</span>
+                              <Badge variant={getRoleBadgeVariant(entry.role)} className="text-[9px] px-1.5 py-0 h-4 uppercase font-bold">
+                                  {entry.role}
+                              </Badge>
+                          </div>
+                          <div className="flex items-center text-[10px] text-muted-foreground mt-0.5">
+                              <Clock className="h-2.5 w-2.5 mr-1" />
+                              {entry.timestamp}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 hover:bg-primary/10 hover:text-primary rounded-full transition-colors" 
+                            onClick={() => handleCopy(entry)}
+                            title="Salin ke form"
+                          >
+                              <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                          
+                          {entry.author === CURRENT_USER && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 hover:bg-primary/10 hover:text-primary rounded-full transition-colors" 
+                                onClick={() => handleEdit(entry)}
+                                title="Edit catatan"
+                              >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive rounded-full transition-colors" 
+                                onClick={() => handleDelete(entry.id)}
+                                title="Hapus catatan"
+                              >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4 grid gap-3 text-sm">
+                      <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
+                            <span>Subjective</span>
+                            <div className="h-[1px] flex-1 bg-muted" />
+                          </div>
+                          <p className="text-[13px] leading-relaxed text-foreground/90 whitespace-pre-wrap pl-1">{entry.subjective}</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
+                            <span>Objective</span>
+                            <div className="h-[1px] flex-1 bg-muted" />
+                          </div>
+                          <p className="text-[13px] leading-relaxed text-foreground/90 whitespace-pre-wrap pl-1">{entry.objective}</p>
+                      </div>
+
+                      <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
+                            <span>Assessment</span>
+                            <div className="h-[1px] flex-1 bg-muted" />
+                          </div>
+                          <p className="text-[13px] font-medium text-foreground/90 whitespace-pre-wrap pl-1">{entry.assessment}</p>
+                      </div>
+
+                      <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
+                            <span>Plan</span>
+                            <div className="h-[1px] flex-1 bg-muted" />
+                          </div>
+                          <p className="text-[13px] leading-relaxed text-foreground/90 whitespace-pre-wrap pl-1 italic">{entry.plan}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

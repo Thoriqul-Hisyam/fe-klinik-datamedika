@@ -11,35 +11,14 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Check if this is a full-screen page (like queue display)
-  const isFullScreenPage = pathname === "/admin/antrian/display";
-
-  // Listen for sidebar collapse state (could be enhanced with context)
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024) {
-        setSidebarCollapsed(true);
-      }
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  if (isFullScreenPage) {
-    return <>{children}</>;
-  }
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Fixed Sidebar */}
+      {/* Sidebar */}
       <Sidebar 
-        collapsed={sidebarCollapsed} 
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
+        collapsed={false} 
+        onToggle={() => setSidebarOpen(false)} 
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
       />
@@ -47,12 +26,12 @@ export default function AdminLayout({
       {/* Main Content Area */}
       <div
         className={cn(
-          "transition-[margin] duration-200",
-          sidebarCollapsed ? "lg:ml-16" : "lg:ml-64"
+          "transition-[margin] duration-300 ease-in-out",
+          sidebarOpen ? "lg:ml-64" : "lg:ml-0"
         )}
       >
         {/* Sticky Top Navigation */}
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <Header onMenuClick={() => setSidebarOpen(true)} showMenuButton={!sidebarOpen} />
 
         {/* Scrollable Main Content */}
         <main className="min-h-[calc(100vh-3.5rem)] p-4 md:p-6">{children}</main>

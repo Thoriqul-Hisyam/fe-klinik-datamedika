@@ -28,6 +28,8 @@ import {
   Bell,
   Lock,
   Database,
+  FlaskConical,
+  Microscope,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -113,6 +115,13 @@ const navigation: NavGroup[] = [
     ],
   },
   {
+    label: "Master Data",
+    items: [
+      { name: "Master Laboratorium", href: "/admin/master/laboratorium", icon: Microscope },
+      { name: "Master Radiologi", href: "/admin/master/radiologi", icon: FlaskConical },
+    ],
+  },
+  {
     label: "Pengaturan",
     items: [
       { name: "Pengaturan Umum", href: "/admin/pengaturan", icon: Settings },
@@ -136,35 +145,33 @@ export function Sidebar({ collapsed, onToggle, open, onOpenChange }: SidebarProp
 
   // Close sidebar on mobile when navigating
   useEffect(() => {
-    if (open && onOpenChange) {
+    if (open && onOpenChange && window.innerWidth < 1024) {
       onOpenChange(false);
     }
   }, [pathname]);
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile/Desktop Backdrop when open as overlay? 
+          Actually on desktop we want it to push content, so no backdrop there.
+      */}
       {open && (
         <div 
-          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-transparent lg:hidden"
           onClick={() => onOpenChange?.(false)}
         />
       )}
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-screen border-r bg-card transition-all duration-300 ease-in-out",
-          collapsed ? "w-16" : "w-64",
-          // Mobile classes
-          "max-lg:fixed",
-          open ? "max-lg:translate-x-0" : "max-lg:-translate-x-full"
+          "fixed left-0 top-0 z-50 h-screen border-r bg-card transition-all duration-300 ease-in-out w-64",
+          !open && "-translate-x-full"
         )}
       >
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-48 items-center border-b px-3">
-            {!collapsed ? (
-               <Link href="/admin" className="flex items-center gap-2 px-2">
+        <div className="flex h-48 items-center justify-between border-b px-4">
+             <Link href="/admin" className="flex items-center gap-2">
                  <img 
                     src="/images/logo.png" 
                     alt="DataMedika" 
@@ -176,16 +183,8 @@ export function Sidebar({ collapsed, onToggle, open, onOpenChange }: SidebarProp
                     }}
                  />
                  <span className="logo-fallback hidden font-semibold text-lg text-primary">DataMedika</span>
-               </Link>
-            ) : (
-                <Link href="/admin" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/5 mx-auto overflow-hidden">
-                   <img 
-                    src="/images/logo.png" 
-                    alt="DataMedika" 
-                    className="h-8 w-auto min-w-[120px] object-left object-contain"
-                   />
-                </Link>
-            )}
+             </Link>
+             
         </div>
 
         {/* Navigation */}
@@ -202,16 +201,11 @@ export function Sidebar({ collapsed, onToggle, open, onOpenChange }: SidebarProp
 
             return navigation.map((group, groupIndex) => (
               <div key={group.label} className={cn(groupIndex > 0 && "mt-4")}>
-                {!collapsed && (
-                  <div className="mb-1.5 px-4">
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                      {group.label}
-                    </span>
-                  </div>
-                )}
-                {collapsed && groupIndex > 0 && (
-                  <div className="mx-2 mb-2 border-t" />
-                )}
+                <div className="mb-1.5 px-4">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {group.label}
+                  </span>
+                </div>
 
                 <div className="space-y-0.5 px-2">
                   {group.items.map((item) => {
@@ -221,25 +215,18 @@ export function Sidebar({ collapsed, onToggle, open, onOpenChange }: SidebarProp
                       <Link
                         key={item.href}
                         href={item.href}
-                        title={collapsed ? item.name : undefined}
                         className={cn(
                           "group relative flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
                           isActive
                             ? "bg-primary/10 text-primary font-medium"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                          collapsed && "justify-center px-2"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         )}
                       >
                         {isActive && (
                           <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-primary" />
                         )}
                         <item.icon className="h-4 w-4 shrink-0" />
-                        {!collapsed && <span>{item.name}</span>}
-                        {collapsed && (
-                          <span className="absolute left-full ml-2 hidden rounded-md bg-foreground px-2 py-1 text-xs text-background group-hover:block whitespace-nowrap z-50">
-                            {item.name}
-                          </span>
-                        )}
+                        <span>{item.name}</span>
                       </Link>
                     );
                   })}
@@ -249,21 +236,16 @@ export function Sidebar({ collapsed, onToggle, open, onOpenChange }: SidebarProp
           })()}
         </nav>
 
-        {/* Collapse Button */}
+        {/* Close Button */}
         <div className="border-t p-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={onToggle}
-            className={cn("w-full h-9", collapsed ? "px-0" : "justify-start")}
+            onClick={() => onOpenChange?.(false)}
+            className="w-full h-9 justify-start"
           >
-            <ChevronLeft
-              className={cn(
-                "h-4 w-4 transition-transform duration-200",
-                collapsed && "rotate-180"
-              )}
-            />
-            {!collapsed && <span className="ml-2 text-sm">Tutup Sidebar</span>}
+            <ChevronLeft className="h-4 w-4" />
+            <span className="ml-2 text-sm">Tutup Sidebar</span>
           </Button>
         </div>
       </div>
