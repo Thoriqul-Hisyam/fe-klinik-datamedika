@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { VoiceRecorder } from "@/components/admin/emr/voice-recorder";
 import {
   User,
   Clock,
@@ -202,14 +203,28 @@ export function CpptSection() {
       <div className="grid gap-6 lg:grid-cols-5 flex-1 overflow-hidden">
         {/* Left Column: Input Form */}
         <div className="lg:col-span-2 space-y-4 overflow-y-auto pr-2">
+          {/* Voice Recorder - Always visible */}
+          <VoiceRecorder
+            onSoapGenerated={(soap) => {
+              setFormData({
+                subjective: soap.subjective,
+                objective: soap.objective,
+                assessment: soap.assessment,
+                plan: soap.plan,
+              });
+              setIsAdding(true);
+              setEditingId(null);
+            }}
+          />
+
           {!isAdding && (
-            <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-xl p-8 text-center bg-muted/10">
-              <FileText className="h-10 w-10 text-muted-foreground mb-4 opacity-20" />
-              <h4 className="font-medium text-muted-foreground">Siap Mengisi CPPT?</h4>
-              <p className="text-sm text-muted-foreground/60 mb-6">Klik tombol dibawah untuk mulai mencatat perkembangan pasien hari ini.</p>
-              <Button onClick={handleAdd} size="lg" className="rounded-full shadow-lg hover:shadow-xl transition-all">
-                <Plus className="h-5 w-5 mr-2" />
-                Mulai Catat CPPT
+            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 text-center bg-muted/10">
+              <FileText className="h-8 w-8 text-muted-foreground mb-3 opacity-20" />
+              <h4 className="font-medium text-muted-foreground text-sm">Atau Isi Manual</h4>
+              <p className="text-xs text-muted-foreground/60 mb-4">Klik tombol dibawah untuk menulis CPPT secara manual.</p>
+              <Button onClick={handleAdd} size="sm" variant="outline" className="rounded-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Tulis Manual
               </Button>
             </div>
           )}
