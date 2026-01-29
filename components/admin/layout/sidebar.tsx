@@ -16,6 +16,8 @@ import {
   BarChart3,
   Settings,
   ChevronLeft,
+  ChevronDown,
+  ChevronRight,
   Activity,
   Users,
   Calendar,
@@ -30,15 +32,34 @@ import {
   Database,
   FlaskConical,
   Microscope,
+  TrendingUp,
+  TrendingDown,
+  Skull,
+  ClipboardCheck,
+  Ambulance,
+  ShieldCheck,
+  BedDouble,
+  DoorOpen,
+  Scissors,
+  Baby,
+  HeartPulse,
+  Package,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-interface NavItem {
+interface SubNavItem {
   name: string;
   href: string;
   icon: LucideIcon;
+}
+
+interface NavItem {
+  name: string;
+  href?: string;
+  icon: LucideIcon;
+  subItems?: SubNavItem[];
 }
 
 interface NavGroup {
@@ -53,6 +74,7 @@ const navigation: NavGroup[] = [
       { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     ],
   },
+  
   {
     label: "Pendaftaran Pasien",
     items: [
@@ -122,6 +144,43 @@ const navigation: NavGroup[] = [
     ],
   },
   {
+    label: "Manajemen Dashboard",
+    items: [
+      {
+        name: "Kunjungan",
+        icon: Activity,
+        subItems: [
+          { name: "Rawat Jalan", href: "/admin/manajemen-dashboard/kunjungan/rawat-jalan", icon: Users },
+          { name: "IGD", href: "/admin/manajemen-dashboard/kunjungan/igd", icon: Ambulance },
+          { name: "Penjamin", href: "/admin/manajemen-dashboard/kunjungan/penjamin", icon: ShieldCheck },
+          { name: "Rawat Inap Kelas", href: "/admin/manajemen-dashboard/kunjungan/rawat-inap-kelas", icon: BedDouble },
+          { name: "Rawat Inap Ruangan", href: "/admin/manajemen-dashboard/kunjungan/rawat-inap-ruangan", icon: DoorOpen },
+          { name: "Kunjungan OK", href: "/admin/manajemen-dashboard/kunjungan/ok", icon: Scissors },
+          { name: "Kunjungan VK", href: "/admin/manajemen-dashboard/kunjungan/vk", icon: Baby },
+        ],
+      },
+      {
+        name: "Penunjang Medis",
+        icon: HeartPulse,
+        subItems: [
+          { name: "Laboratorium", href: "/admin/manajemen-dashboard/penunjang-medis/laboratorium", icon: Microscope },
+          { name: "Radiologi", href: "/admin/manajemen-dashboard/penunjang-medis/radiologi", icon: FlaskConical },
+        ],
+      },
+      { name: "Morbiditas Pasien", href: "/admin/manajemen-dashboard/morbiditas", icon: ClipboardCheck },
+      {
+        name: "Data Obat/Alkes",
+        icon: Package,
+        subItems: [
+          { name: "Fast Moving", href: "/admin/manajemen-dashboard/obat-alkes/fast-moving", icon: TrendingUp },
+          { name: "Slow Moving", href: "/admin/manajemen-dashboard/obat-alkes/slow-moving", icon: TrendingDown },
+          { name: "Death Moving", href: "/admin/manajemen-dashboard/obat-alkes/death-moving", icon: Skull },
+          { name: "Kartu Stock", href: "/admin/manajemen-dashboard/obat-alkes/kartu-stock", icon: ClipboardList },
+        ],
+      },
+    ],
+  },
+  {
     label: "Pengaturan",
     items: [
       { name: "Pengaturan Umum", href: "/admin/pengaturan", icon: Settings },
@@ -138,6 +197,81 @@ interface SidebarProps {
   onToggle: () => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+}
+
+// Helper component for rendering nav items with submenus
+function NavItemWithSubMenu({ 
+  item, 
+  pathname 
+}: { 
+  item: NavItem; 
+  pathname: string;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Check if any subitem is active
+  const hasActiveSubItem = item.subItems?.some(sub => 
+    pathname === sub.href || pathname.startsWith(sub.href + "/")
+  );
+  
+  // Auto-expand if a sub-item is active
+  useEffect(() => {
+    if (hasActiveSubItem) {
+      setIsExpanded(true);
+    }
+  }, [hasActiveSubItem, pathname]);
+
+  return (
+    <div>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={cn(
+          "group relative flex w-full items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
+          hasActiveSubItem
+            ? "bg-primary/5 text-primary font-medium"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <item.icon className="h-4 w-4 shrink-0" />
+          <span>{item.name}</span>
+        </div>
+        <ChevronDown 
+          className={cn(
+            "h-4 w-4 shrink-0 transition-transform duration-200",
+            isExpanded && "rotate-180"
+          )} 
+        />
+      </button>
+      
+      {isExpanded && item.subItems && (
+        <div className="ml-4 mt-1 space-y-0.5 border-l border-muted pl-3">
+          {item.subItems.map((subItem) => {
+            const isSubActive = pathname === subItem.href || pathname.startsWith(subItem.href + "/");
+            
+            return (
+              <Link
+                key={subItem.href}
+                href={subItem.href}
+                className={cn(
+                  "group relative flex items-center gap-3 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+                  isSubActive
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                {isSubActive && (
+                  <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r bg-primary" />
+                )}
+                <subItem.icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="text-xs">{subItem.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function Sidebar({ collapsed, onToggle, open, onOpenChange }: SidebarProps) {
@@ -189,51 +323,53 @@ export function Sidebar({ collapsed, onToggle, open, onOpenChange }: SidebarProp
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-3">
-          {(() => {
-            // Find all items that match the current pathname
-            const allItems = navigation.flatMap(g => g.items);
-            const matches = allItems.filter(item => 
-              pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href + "/"))
-            );
-            
-            // The best match is the one with the longest href
-            const bestMatch = matches.sort((a, b) => b.href.length - a.href.length)[0];
-
-            return navigation.map((group, groupIndex) => (
-              <div key={group.label} className={cn(groupIndex > 0 && "mt-4")}>
-                <div className="mb-1.5 px-4">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    {group.label}
-                  </span>
-                </div>
-
-                <div className="space-y-0.5 px-2">
-                  {group.items.map((item) => {
-                    const isActive = bestMatch?.href === item.href || pathname === item.href;
-
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                          "group relative flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
-                          isActive
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        )}
-                      >
-                        {isActive && (
-                          <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-primary" />
-                        )}
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        <span>{item.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
+          {navigation.map((group, groupIndex) => (
+            <div key={group.label} className={cn(groupIndex > 0 && "mt-4")}>
+              <div className="mb-1.5 px-4">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  {group.label}
+                </span>
               </div>
-            ));
-          })()}
+
+              <div className="space-y-0.5 px-2">
+                {group.items.map((item) => {
+                  // If item has subItems, render with submenu
+                  if (item.subItems && item.subItems.length > 0) {
+                    return (
+                      <NavItemWithSubMenu 
+                        key={item.name} 
+                        item={item} 
+                        pathname={pathname} 
+                      />
+                    );
+                  }
+                  
+                  // Otherwise render as regular link
+                  const isActive = pathname === item.href || 
+                    (item.href && item.href !== "/admin" && pathname.startsWith(item.href + "/"));
+
+                  return (
+                    <Link
+                      key={item.href || item.name}
+                      href={item.href || "#"}
+                      className={cn(
+                        "group relative flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
+                        isActive
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      {isActive && (
+                        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-primary" />
+                      )}
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Close Button */}
