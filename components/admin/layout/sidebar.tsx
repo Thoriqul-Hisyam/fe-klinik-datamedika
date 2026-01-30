@@ -190,6 +190,12 @@ const navigation: NavGroup[] = [
       { name: "Backup Data", href: "/admin/pengaturan/backup", icon: Database },
     ],
   },
+  {
+    label: "Dashboard Dinkes",
+    items: [
+      { name: "Monitoring Faskes", href: "/admin/dinkes", icon: Building2 },
+    ],
+  },
 ];
 
 interface SidebarProps {

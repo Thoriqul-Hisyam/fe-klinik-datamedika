@@ -91,7 +91,7 @@ export default function VKPage() {
                     outerRadius={100}
                     paddingAngle={5}
                     dataKey="value"
-                    label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({name, percent}) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                   >
                     {methodData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -121,7 +121,7 @@ export default function VKPage() {
                             outerRadius={100}
                             paddingAngle={5}
                             dataKey="value"
-                            label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            label={({name, percent}) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                         >
                             {insuranceData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />

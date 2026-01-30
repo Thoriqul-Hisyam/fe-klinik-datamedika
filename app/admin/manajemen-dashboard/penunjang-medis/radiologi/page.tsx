@@ -85,7 +85,7 @@ export default function RadiologiDashboardPage() {
                   outerRadius={100}
                   paddingAngle={5}
                   dataKey="value"
-                  label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({name, percent}) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                 >
                   {radData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
