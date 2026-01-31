@@ -22,14 +22,17 @@ export function SetPriceDialog({ open, onOpenChange, obat, onSave }: SetPriceDia
   const [marginPersentase, setMarginPersentase] = useState<string>("");
   const [status, setStatus] = useState<string>("Active");
 
-  useEffect(() => {
+  const [prevObat, setPrevObat] = useState(obat);
+
+  if (obat !== prevObat) {
+    setPrevObat(obat);
     if (obat) {
       setTipeHarga(obat.tipeHarga);
       setHargaJualFix(obat.hargaJualFix?.toString() || "");
       setMarginPersentase(obat.marginPersentase?.toString() || "");
       setStatus(obat.status === "Show" ? "Active" : "Nonaktif");
     }
-  }, [obat]);
+  }
 
   const handleSave = () => {
     if (!obat) return;

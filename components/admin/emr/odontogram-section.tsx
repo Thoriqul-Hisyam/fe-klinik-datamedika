@@ -46,6 +46,72 @@ interface ToothState {
   notes: string;
 }
 
+const getSurfaceColor = (condition: ToothCondition | undefined) => {
+  switch (condition) {
+    case "caries": return "fill-red-500 stroke-red-700";
+    case "filling": return "fill-green-500 stroke-green-700";
+    case "crown": return "fill-blue-500 stroke-blue-700";
+    case "missing": return "fill-neutral-200 stroke-neutral-400 opacity-50";
+    default: return "fill-white stroke-neutral-300";
+  }
+};
+
+const SurfacePath = ({ points, surface, current, onClick }: { 
+  points: string, 
+  surface: ToothSurface, 
+  current: ToothCondition | undefined,
+  onClick: () => void 
+}) => (
+  <polygon 
+    points={points} 
+    className={cn(
+      getSurfaceColor(current), 
+      "stroke-1 transition-colors hover:opacity-80"
+    )}
+    onClick={onClick}
+  />
+);
+
+const ToothIcon = ({ 
+  id, 
+  teeth, 
+  isFinalized, 
+  onClick 
+}: { 
+  id: number, 
+  teeth: Record<number, ToothState>,
+  isFinalized: boolean,
+  onClick: (id: number) => void
+}) => {
+  const state = teeth[id];
+  const surfaces = state?.surfaces || {};
+  const isMissing = Object.values(surfaces).some(c => c === "missing");
+
+  return (
+    <div 
+      onClick={() => onClick(id)}
+      className={cn(
+        "flex flex-col items-center gap-1 cursor-pointer transition-transform hover:scale-110",
+        isFinalized && "cursor-default"
+      )}
+    >
+      <span className="text-[10px] font-bold text-muted-foreground">{id}</span>
+      <svg width="32" height="32" viewBox="0 0 32 32" className="drop-shadow-sm">
+        {/* Surface Polygons */}
+        <polygon points="0,0 32,0 24,8 8,8" className={cn(getSurfaceColor(surfaces.atas), "stroke-1")} />
+        <polygon points="8,24 24,24 32,32 0,32" className={cn(getSurfaceColor(surfaces.bawah), "stroke-1")} />
+        <polygon points="0,0 8,8 8,24 0,32" className={cn(getSurfaceColor(surfaces.kiri), "stroke-1")} />
+        <polygon points="24,8 32,0 32,32 24,24" className={cn(getSurfaceColor(surfaces.kanan), "stroke-1")} />
+        <rect x="8" y="8" width="16" height="16" className={cn(getSurfaceColor(surfaces.tengah), "stroke-1")} />
+        
+        {isMissing && (
+          <path d="M0 0 L32 32 M32 0 L0 32" className="stroke-neutral-500 stroke-2 pointer-events-none" />
+        )}
+      </svg>
+    </div>
+  );
+};
+
 export function OdontogramSection() {
   const [teeth, setTeeth] = useState<Record<number, ToothState>>({});
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null);
@@ -90,62 +156,6 @@ export function OdontogramSection() {
     setSelectedTooth(null);
   };
 
-  const getSurfaceColor = (condition: ToothCondition | undefined) => {
-    switch (condition) {
-      case "caries": return "fill-red-500 stroke-red-700";
-      case "filling": return "fill-green-500 stroke-green-700";
-      case "crown": return "fill-blue-500 stroke-blue-700";
-      case "missing": return "fill-neutral-200 stroke-neutral-400 opacity-50";
-      default: return "fill-white stroke-neutral-300";
-    }
-  };
-
-  const ToothIcon = ({ id }: { id: number }) => {
-    const state = teeth[id];
-    const surfaces = state?.surfaces || {};
-    const isMissing = Object.values(surfaces).some(c => c === "missing");
-
-    return (
-      <div 
-        onClick={() => handleToothClick(id)}
-        className={cn(
-          "flex flex-col items-center gap-1 cursor-pointer transition-transform hover:scale-110",
-          isFinalized && "cursor-default"
-        )}
-      >
-        <span className="text-[10px] font-bold text-muted-foreground">{id}</span>
-        <svg width="32" height="32" viewBox="0 0 32 32" className="drop-shadow-sm">
-          {/* Surface Polygons */}
-          <polygon points="0,0 32,0 24,8 8,8" className={cn(getSurfaceColor(surfaces.atas), "stroke-1")} />
-          <polygon points="8,24 24,24 32,32 0,32" className={cn(getSurfaceColor(surfaces.bawah), "stroke-1")} />
-          <polygon points="0,0 8,8 8,24 0,32" className={cn(getSurfaceColor(surfaces.kiri), "stroke-1")} />
-          <polygon points="24,8 32,0 32,32 24,24" className={cn(getSurfaceColor(surfaces.kanan), "stroke-1")} />
-          <rect x="8" y="8" width="16" height="16" className={cn(getSurfaceColor(surfaces.tengah), "stroke-1")} />
-          
-          {isMissing && (
-            <path d="M0 0 L32 32 M32 0 L0 32" className="stroke-neutral-500 stroke-2 pointer-events-none" />
-          )}
-        </svg>
-      </div>
-    );
-  };
-
-  const SurfacePath = ({ points, surface, current, onClick }: { 
-    points: string, 
-    surface: ToothSurface, 
-    current: ToothCondition | undefined,
-    onClick: () => void 
-  }) => (
-    <polygon 
-      points={points} 
-      className={cn(
-        getSurfaceColor(current), 
-        "stroke-1 transition-colors hover:opacity-80"
-      )}
-      onClick={onClick}
-    />
-  );
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -182,20 +192,20 @@ export function OdontogramSection() {
           {/* Upper Teeth */}
           <div className="flex justify-center gap-12 border-b pb-8">
             <div className="flex gap-2">
-              {QUADRANTS.UR.map(id => <ToothIcon key={id} id={id} />)}
+              {QUADRANTS.UR.map(id => <ToothIcon key={id} id={id} teeth={teeth} isFinalized={isFinalized} onClick={handleToothClick} />)}
             </div>
             <div className="flex gap-2 border-l pl-12">
-              {QUADRANTS.UL.map(id => <ToothIcon key={id} id={id} />)}
+              {QUADRANTS.UL.map(id => <ToothIcon key={id} id={id} teeth={teeth} isFinalized={isFinalized} onClick={handleToothClick} />)}
             </div>
           </div>
 
           {/* Lower Teeth */}
           <div className="flex justify-center gap-12 pt-8">
             <div className="flex gap-2">
-              {QUADRANTS.LR.map(id => <ToothIcon key={id} id={id} />)}
+              {QUADRANTS.LR.map(id => <ToothIcon key={id} id={id} teeth={teeth} isFinalized={isFinalized} onClick={handleToothClick} />)}
             </div>
             <div className="flex gap-2 border-l pl-12">
-              {QUADRANTS.LL.map(id => <ToothIcon key={id} id={id} />)}
+              {QUADRANTS.LL.map(id => <ToothIcon key={id} id={id} teeth={teeth} isFinalized={isFinalized} onClick={handleToothClick} />)}
             </div>
           </div>
         </div>

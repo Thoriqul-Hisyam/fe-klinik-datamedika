@@ -104,11 +104,14 @@ export function DoctorFormModal({
     tandaTangan: null,
   });
 
-  useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    } else {
-      setFormData({
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
+
+  if (open !== prevOpen || initialData !== prevInitialData) {
+    setPrevOpen(open);
+    setPrevInitialData(initialData);
+    if (open) {
+      setFormData(initialData || {
         nama: "",
         spesialis: "Umum",
         namaDisplay: "",
@@ -121,7 +124,7 @@ export function DoctorFormModal({
         onCall: false,
       });
     }
-  }, [initialData, open]);
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

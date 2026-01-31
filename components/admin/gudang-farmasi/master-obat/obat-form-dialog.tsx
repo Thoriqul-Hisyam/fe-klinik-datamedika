@@ -38,17 +38,22 @@ const emptyObat: Obat = {
 export function ObatFormDialog({ open, onOpenChange, obat, onSave }: ObatFormDialogProps) {
   const [formData, setFormData] = useState<Obat>(emptyObat);
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevObat, setPrevObat] = useState(obat);
+
+  if (open !== prevOpen || obat !== prevObat) {
+    setPrevOpen(open);
+    setPrevObat(obat);
     if (open) {
       if (obat) {
         setFormData(obat);
       } else {
-        setFormData({ ...emptyObat, id: Math.random().toString(36).substr(2, 9) });
+        setFormData({ ...emptyObat, id: Math.random().toString(36).substring(2, 11) });
       }
     }
-  }, [open, obat]);
+  }
 
-  const handleChange = (field: keyof Obat, value: any) => {
+  const handleChange = <K extends keyof Obat>(field: K, value: Obat[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -86,12 +91,12 @@ export function ObatFormDialog({ open, onOpenChange, obat, onSave }: ObatFormDia
               id="hargaBeli" 
               type="number" 
               value={formData.hargaBeli} 
-              onChange={e => handleChange("hargaBeli", parseFloat(e.target.value))} 
+              onChange={e => handleChange("hargaBeli", parseFloat(e.target.value) || 0)} 
             />
           </div>
           <div className="space-y-2">
             <Label>Tipe Harga</Label>
-            <Select value={formData.tipeHarga} onValueChange={(v) => handleChange("tipeHarga", v)}>
+            <Select value={formData.tipeHarga} onValueChange={(v) => handleChange("tipeHarga", v as TipeHarga)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih Tipe" />
               </SelectTrigger>
@@ -109,7 +114,7 @@ export function ObatFormDialog({ open, onOpenChange, obat, onSave }: ObatFormDia
           */}
            <div className="space-y-2">
             <Label>Tipe Barang</Label>
-            <Select value={formData.tipeBarang} onValueChange={(v) => handleChange("tipeBarang", v)}>
+            <Select value={formData.tipeBarang} onValueChange={(v) => handleChange("tipeBarang", v as TipeBarang)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih Tipe" />
               </SelectTrigger>
@@ -143,7 +148,7 @@ export function ObatFormDialog({ open, onOpenChange, obat, onSave }: ObatFormDia
           </div>
           <div className="space-y-2">
             <Label>Formularium Nasional</Label>
-            <Select value={formData.formulariumNasional} onValueChange={(v) => handleChange("formulariumNasional", v)}>
+            <Select value={formData.formulariumNasional} onValueChange={(v) => handleChange("formulariumNasional", v as BooleanString)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih" />
               </SelectTrigger>
@@ -155,7 +160,7 @@ export function ObatFormDialog({ open, onOpenChange, obat, onSave }: ObatFormDia
           </div>
           <div className="space-y-2">
             <Label>Formularium RS</Label>
-            <Select value={formData.formulariumRS} onValueChange={(v) => handleChange("formulariumRS", v)}>
+            <Select value={formData.formulariumRS} onValueChange={(v) => handleChange("formulariumRS", v as BooleanString)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih" />
               </SelectTrigger>
@@ -171,7 +176,7 @@ export function ObatFormDialog({ open, onOpenChange, obat, onSave }: ObatFormDia
           </div>
           <div className="space-y-2">
             <Label>Status</Label>
-            <Select value={formData.status} onValueChange={(v) => handleChange("status", v)}>
+            <Select value={formData.status} onValueChange={(v) => handleChange("status", v as StatusObat)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih Status" />
               </SelectTrigger>

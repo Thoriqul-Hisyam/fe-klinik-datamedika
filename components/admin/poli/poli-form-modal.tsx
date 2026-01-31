@@ -67,18 +67,21 @@ export function PoliFormModal({
     spesialisasi: [],
   });
 
-  useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    } else {
-      setFormData({
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
+
+  if (open !== prevOpen || initialData !== prevInitialData) {
+    setPrevOpen(open);
+    setPrevInitialData(initialData);
+    if (open) {
+      setFormData(initialData || {
         nama: "",
         kode: "",
         tipe: "reguler",
         spesialisasi: [],
       });
     }
-  }, [initialData, open]);
+  }
 
   const toggleSpecialization = (spec: string) => {
     setFormData((prev) => ({

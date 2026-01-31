@@ -50,6 +50,7 @@ import {
   Search,
   MousePointerClick,
   UserCircle,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -153,6 +154,14 @@ const navigation: NavGroup[] = [
       { name: "Transaksi APS", href: "/admin/farmasi/transaksi-aps", icon: UserPlus },
       { name: "Stok Opname", href: "/admin/farmasi/stok-opname", icon: ClipboardCheck },
       { name: "Persetujuan Stok Opname", href: "/admin/farmasi/approve-stok-opname", icon: FileCheck },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { name: "Pendapatan", href: "/admin/finance/pendapatan", icon: Wallet },
+      { name: "Pengeluaran", href: "/admin/finance/pengeluaran", icon: Receipt },
+      { name: "Laba Rugi", href: "/admin/finance/laba-rugi", icon: BarChart3 },
     ],
   },
   {
@@ -274,6 +283,7 @@ const navigation: NavGroup[] = [
     label: "Dashboard Dinkes",
     items: [
       { name: "Monitoring Faskes", href: "/admin/dinkes", icon: Building2 },
+      { name: "Finance Monitoring", href: "/admin/dinkes/finance", icon: Wallet },
     ],
   },
 ];
@@ -301,11 +311,13 @@ function NavItemWithSubMenu({
   );
   
   // Auto-expand if a sub-item is active
-  useEffect(() => {
-    if (hasActiveSubItem) {
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    if (hasActiveSubItem && !isExpanded) {
       setIsExpanded(true);
     }
-  }, [hasActiveSubItem, pathname]);
+  }
 
   return (
     <div>

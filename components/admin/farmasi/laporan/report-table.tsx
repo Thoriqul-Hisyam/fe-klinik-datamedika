@@ -9,7 +9,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export function ReportTable({ data, slug }: { data: any[], slug: string }) {
+export type ReportItem = Record<string, any>;
+
+export function ReportTable({ data, slug }: { data: ReportItem[], slug: string }) {
   if (!data || data.length === 0) {
     return <div className="p-8 text-center text-muted-foreground">Tidak ada data untuk laporan ini.</div>;
   }
@@ -24,7 +26,7 @@ export function ReportTable({ data, slug }: { data: any[], slug: string }) {
       case "stok-bhp":
         return {
           headers: ["Item", "Unit", "Stok", "Expired"],
-          renderRow: (item: any) => (
+          renderRow: (item: ReportItem) => (
             <>
               <TableCell className="font-medium">{item.item}</TableCell>
               <TableCell>{item.unit}</TableCell>
@@ -36,7 +38,7 @@ export function ReportTable({ data, slug }: { data: any[], slug: string }) {
       case "slow-moving":
         return {
           headers: ["Item", "Inventory Days", "Penjualan Terakhir"],
-          renderRow: (item: any) => (
+          renderRow: (item: ReportItem) => (
             <>
               <TableCell className="font-medium">{item.item}</TableCell>
               <TableCell>{item.days} hari</TableCell>
@@ -47,7 +49,7 @@ export function ReportTable({ data, slug }: { data: any[], slug: string }) {
       case "persediaan":
         return {
           headers: ["Item", "Batch", "Stok", "Nilai Persediaan"],
-          renderRow: (item: any) => (
+          renderRow: (item: ReportItem) => (
             <>
               <TableCell className="font-medium">{item.item}</TableCell>
               <TableCell>{item.batch}</TableCell>
@@ -59,7 +61,7 @@ export function ReportTable({ data, slug }: { data: any[], slug: string }) {
       case "rekap-penjualan":
         return {
           headers: ["Tanggal", "Jumlah Transaksi", "Total Pendapatan"],
-          renderRow: (item: any) => (
+          renderRow: (item: ReportItem) => (
             <>
               <TableCell>{item.tanggal}</TableCell>
               <TableCell className="text-center">{item.transaksi}</TableCell>
@@ -70,7 +72,7 @@ export function ReportTable({ data, slug }: { data: any[], slug: string }) {
       case "rekap-paket":
         return {
           headers: ["Nama Paket", "Jumlah Terjual", "Total Revenue"],
-          renderRow: (item: any) => (
+          renderRow: (item: ReportItem) => (
             <>
               <TableCell className="font-medium">{item.paket}</TableCell>
               <TableCell className="text-center">{item.terjual}</TableCell>
@@ -81,7 +83,7 @@ export function ReportTable({ data, slug }: { data: any[], slug: string }) {
       case "waktu-tunggu":
         return {
           headers: ["Order ID", "Pasien", "Durasi Tunggu"],
-          renderRow: (item: any) => (
+          renderRow: (item: ReportItem) => (
             <>
               <TableCell className="font-mono text-xs">{item.orderId}</TableCell>
               <TableCell>{item.pasien}</TableCell>
@@ -92,7 +94,7 @@ export function ReportTable({ data, slug }: { data: any[], slug: string }) {
       case "pembelian":
         return {
           headers: ["No. PO", "Supplier", "Total Pembelian"],
-          renderRow: (item: any) => (
+          renderRow: (item: ReportItem) => (
             <>
               <TableCell className="font-medium">{item.po}</TableCell>
               <TableCell>{item.supplier}</TableCell>
@@ -103,7 +105,7 @@ export function ReportTable({ data, slug }: { data: any[], slug: string }) {
       case "history-pasien":
         return {
           headers: ["Pasien", "Tanggal", "Obat", "Dosis/Aturan"],
-          renderRow: (item: any) => (
+          renderRow: (item: ReportItem) => (
             <>
               <TableCell className="font-medium">{item.pasien}</TableCell>
               <TableCell>{item.tanggal}</TableCell>
@@ -117,7 +119,7 @@ export function ReportTable({ data, slug }: { data: any[], slug: string }) {
         const keys = Object.keys(data[0]);
         return {
           headers: keys.map(k => k.charAt(0).toUpperCase() + k.slice(1)),
-          renderRow: (item: any) => (
+          renderRow: (item: ReportItem) => (
             <>
               {keys.map(k => (
                 <TableCell key={k}>{typeof item[k] === "number" && item[k] > 1000 ? formatIDR(item[k]) : item[k]}</TableCell>

@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, ClipboardList, TrendingDown, LayoutDashboard, BarChart3, Package, MousePointerClick, Pill, Truck, ShoppingCart, TrendingUp, FileText, ClipboardCheck, UserCircle } from "lucide-react";
+import { LucideIcon, Activity, ClipboardList, TrendingDown, LayoutDashboard, BarChart3, Package, MousePointerClick, Pill, Truck, ShoppingCart, TrendingUp, FileText, ClipboardCheck, UserCircle } from "lucide-react";
 import { dummyReportData } from "@/components/admin/farmasi/laporan/data";
 import { ReportTable } from "@/components/admin/farmasi/laporan/report-table";
 
-const reportsMap: Record<string, { name: string, desc: string, icon: any }> = {
+const reportsMap: Record<string, { name: string, desc: string, icon: LucideIcon }> = {
   "stok-bhp": { name: "Stok Obat BHP", desc: "Laporan stok bahan habis pakai.", icon: ClipboardList },
   "slow-moving": { name: "Slow Moving", desc: "Daftar obat dengan perputaran lambat.", icon: TrendingDown },
   "persediaan": { name: "Persediaan", desc: "Ringkasan nilai persediaan obat.", icon: LayoutDashboard },
@@ -30,10 +30,18 @@ export default function LaporanDetailPage() {
   const report = reportsMap[slug];
   
   const [loading, setLoading] = useState(true);
+
+  // Reset loading status when slug changes to avoid "flash" of old data
+  // but using a state update during render to avoid cascading useEffect render
+  const [prevSlug, setPrevSlug] = useState(slug);
+  if (slug !== prevSlug) {
+    setPrevSlug(slug);
+    setLoading(true);
+  }
+
   const data = dummyReportData[slug] || [];
 
   useEffect(() => {
-    setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 800);
