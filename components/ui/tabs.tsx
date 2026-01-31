@@ -19,13 +19,24 @@ function useTabs() {
 }
 
 interface TabsProps {
-  value: string;
-  onValueChange: (value: string) => void;
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
   children: React.ReactNode;
   className?: string;
 }
 
-function Tabs({ value, onValueChange, children, className }: TabsProps) {
+function Tabs({ defaultValue, value: controlledValue, onValueChange: controlledOnValueChange, children, className }: TabsProps) {
+  const [internalValue, setInternalValue] = React.useState(defaultValue || "");
+  
+  const value = controlledValue !== undefined ? controlledValue : internalValue;
+  const onValueChange = React.useCallback((newValue: string) => {
+    if (controlledValue === undefined) {
+      setInternalValue(newValue);
+    }
+    controlledOnValueChange?.(newValue);
+  }, [controlledValue, controlledOnValueChange]);
+
   return (
     <TabsContext.Provider value={{ value, onValueChange }}>
       <div className={className}>{children}</div>

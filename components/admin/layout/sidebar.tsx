@@ -44,6 +44,12 @@ import {
   Baby,
   HeartPulse,
   Package,
+  Truck,
+  ShoppingCart,
+  Undo2,
+  Search,
+  MousePointerClick,
+  UserCircle,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -113,11 +119,40 @@ const navigation: NavGroup[] = [
     ],
   },
   {
-    label: "Pharmacy & E-Resep",
+    label: "Farmasi",
     items: [
-      { name: "Stok Obat", href: "/admin/farmasi", icon: Pill },
-      { name: "E-Resep", href: "/admin/farmasi/resep", icon: Receipt },
-      { name: "Riwayat Resep", href: "/admin/farmasi/riwayat", icon: FileText },
+      { name: "Stok Obat", href: "/admin/farmasi/stok", icon: Pill },
+      { name: "Alokasi Vaksin", href: "/admin/farmasi/alokasi-vaksin", icon: Syringe },
+      { name: "Paket Obat", href: "/admin/farmasi/paket-obat", icon: Package },
+      { name: "Transaksi", href: "/admin/farmasi/transaksi", icon: ShoppingCart },
+      { name: "SOAP", href: "/admin/farmasi/soap", icon: FileText },
+      { name: "Permintaan ke Gudang", href: "/admin/farmasi/permintaan-gudang", icon: Building2 },
+      { name: "Transaksi Paket", href: "/admin/farmasi/transaksi-paket", icon: LayoutDashboard },
+      { name: "Retur ke Gudang", href: "/admin/farmasi/retur-gudang", icon: Undo2 },
+      { 
+        name: "Laporan", 
+        icon: BarChart3,
+        subItems: [
+          { name: "Stok Obat BHP", href: "/admin/farmasi/laporan/stok-bhp", icon: ClipboardList },
+          { name: "Slow Moving", href: "/admin/farmasi/laporan/slow-moving", icon: TrendingDown },
+          { name: "Persediaan", href: "/admin/farmasi/laporan/persediaan", icon: LayoutDashboard },
+          { name: "Rekap Penjualan", href: "/admin/farmasi/laporan/rekap-penjualan", icon: BarChart3 },
+          { name: "Rekap Paket Obat", href: "/admin/farmasi/laporan/rekap-paket", icon: Package },
+          { name: "Rekap Waktu Tunggu", href: "/admin/farmasi/laporan/waktu-tunggu", icon: MousePointerClick },
+          { name: "Rekap Penjualan Per Obat", href: "/admin/farmasi/laporan/penjualan-per-obat", icon: Pill },
+          { name: "Laporan Distribusi", href: "/admin/farmasi/laporan/distribusi", icon: Truck },
+          { name: "Pembelian Obat", href: "/admin/farmasi/laporan/pembelian", icon: ShoppingCart },
+          { name: "Fast Moving", href: "/admin/farmasi/laporan/fast-moving", icon: TrendingUp },
+          { name: "Rekap Pembelian", href: "/admin/farmasi/laporan/rekap-pembelian", icon: FileText },
+          { name: "Stok Opname", href: "/admin/farmasi/laporan/stok-opname", icon: ClipboardCheck },
+          { name: "Kartu Stok", href: "/admin/farmasi/laporan/kartu-stok", icon: LayoutDashboard },
+          { name: "History Obat Pasien", href: "/admin/farmasi/laporan/history-pasien", icon: UserCircle },
+        ]
+      },
+      { name: "Pemakaian Biaya Item", href: "/admin/farmasi/pemakaian-biaya", icon: CreditCard },
+      { name: "Transaksi APS", href: "/admin/farmasi/transaksi-aps", icon: UserPlus },
+      { name: "Stok Opname", href: "/admin/farmasi/stok-opname", icon: ClipboardCheck },
+      { name: "Persetujuan Stok Opname", href: "/admin/farmasi/approve-stok-opname", icon: FileCheck },
     ],
   },
   {
@@ -188,6 +223,51 @@ const navigation: NavGroup[] = [
       { name: "Hak Akses", href: "/admin/pengaturan/roles", icon: Lock },
       { name: "Notifikasi", href: "/admin/pengaturan/notifikasi", icon: Bell },
       { name: "Backup Data", href: "/admin/pengaturan/backup", icon: Database },
+    ],
+  },
+  {
+    label: "Gudang Farmasi",
+    items: [
+      { 
+        name: "Master Obat", 
+        href: "/admin/gudang-farmasi/master-obat", 
+        icon: Pill 
+      },
+      { 
+        name: "Kamus KFA", 
+        href: "/admin/gudang-farmasi/kfa", 
+        icon: Search 
+      },
+      { 
+        name: "Master Supplier", 
+        href: "/admin/gudang-farmasi/master-supplier", 
+        icon: Truck 
+      },
+      { 
+        name: "Medicine Stok", 
+        href: "/admin/gudang-farmasi/stok", 
+        icon: Package 
+      },
+      { 
+        name: "Pembelian Obat", 
+        href: "/admin/gudang-farmasi/pembelian", 
+        icon: ShoppingCart 
+      },
+      { 
+        name: "Distribusi Obat", 
+        href: "/admin/gudang-farmasi/distribusi", 
+        icon: Truck 
+      },
+      { 
+        name: "Retur", 
+        href: "/admin/gudang-farmasi/retur", 
+        icon: Undo2 
+      },
+      { 
+        name: "Kartu Stok", 
+        href: "/admin/gudang-farmasi/kartu-stok", 
+        icon: ClipboardList 
+      },
     ],
   },
   {
