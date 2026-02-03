@@ -25,6 +25,10 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // Mock data for visit reports
 const visitData = [
@@ -77,13 +81,16 @@ const visitData = [
 
 export default function VisitReportPage() {
   const [search, setSearch] = useState("");
-  const [dateFrom, setDateFrom] = useState("2026-01-01");
-  const [dateTo, setDateTo] = useState("2026-01-22");
+  const today = new Date().toISOString().split("T")[0];
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
 
   const filteredData = visitData.filter(
     (v) =>
-      v.nama.toLowerCase().includes(search.toLowerCase()) ||
-      v.poli.toLowerCase().includes(search.toLowerCase())
+      (v.nama.toLowerCase().includes(search.toLowerCase()) ||
+      v.poli.toLowerCase().includes(search.toLowerCase())) &&
+      (!dateFrom || v.tanggal >= dateFrom) &&
+      (!dateTo || v.tanggal <= dateTo)
   );
 
   return (
@@ -166,19 +173,53 @@ export default function VisitReportPage() {
             </div>
             <div className="w-[180px]">
               <p className="text-xs font-medium mb-1.5 ml-1">Dari Tanggal</p>
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(new Date(dateFrom), "dd MMM yyyy") : <span>Pilih Tanggal</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateFrom ? new Date(dateFrom) : undefined}
+                    onSelect={(date) => setDateFrom(date ? format(date, "yyyy-MM-dd") : "")}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="w-[180px]">
               <p className="text-xs font-medium mb-1.5 ml-1">Sampai Tanggal</p>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dateTo ? format(new Date(dateTo), "dd MMM yyyy") : <span>Pilih Tanggal</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateTo ? new Date(dateTo) : undefined}
+                    onSelect={(date) => setDateTo(date ? format(date, "yyyy-MM-dd") : "")}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="flex items-end">
               <Button variant="secondary">

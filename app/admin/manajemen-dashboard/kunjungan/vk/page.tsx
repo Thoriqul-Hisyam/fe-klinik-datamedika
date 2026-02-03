@@ -18,6 +18,10 @@ const insuranceData = [
 ];
 
 export default function VKPage() {
+  const handleFilter = (from: Date | undefined, to: Date | undefined) => {
+    console.log("Filtering VK data from:", from, "to:", to);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -27,7 +31,7 @@ export default function VKPage() {
             Statistik persalinan dan kelahiran bayi
           </p>
         </div>
-        <DashboardFilter />
+        <DashboardFilter onFilter={handleFilter} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

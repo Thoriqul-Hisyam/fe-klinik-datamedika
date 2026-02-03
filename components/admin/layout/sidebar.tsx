@@ -80,14 +80,18 @@ const navigation: NavGroup[] = [
     items: [
       { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     ],
-  },
-  
+  },  
   {
     label: "Pendaftaran Pasien",
     items: [
       { name: "Daftar Pasien Hari Ini", href: "/admin/pasien", icon: Users },
-      { name: "Pendaftaran Baru", href: "/admin/pasien/baru", icon: UserPlus },
       { name: "Antrian Hari Ini", href: "/admin/antrian", icon: Calendar },
+    ],
+  },
+  {
+    label: "Kasir",
+    items: [
+      { name: "Kasir", href: "/admin/kasir", icon: CreditCard },
     ],
   },
   {
@@ -154,6 +158,51 @@ const navigation: NavGroup[] = [
       { name: "Transaksi APS", href: "/admin/farmasi/transaksi-aps", icon: UserPlus },
       { name: "Stok Opname", href: "/admin/farmasi/stok-opname", icon: ClipboardCheck },
       { name: "Persetujuan Stok Opname", href: "/admin/farmasi/approve-stok-opname", icon: FileCheck },
+    ],
+  },
+  {
+    label: "Gudang Farmasi",
+    items: [
+      { 
+        name: "Master Obat", 
+        href: "/admin/gudang-farmasi/master-obat", 
+        icon: Pill 
+      },
+      { 
+        name: "Kamus KFA", 
+        href: "/admin/gudang-farmasi/kfa", 
+        icon: Search 
+      },
+      { 
+        name: "Master Supplier", 
+        href: "/admin/gudang-farmasi/master-supplier", 
+        icon: Truck 
+      },
+      { 
+        name: "Medicine Stok", 
+        href: "/admin/gudang-farmasi/stok", 
+        icon: Package 
+      },
+      { 
+        name: "Pembelian Obat", 
+        href: "/admin/gudang-farmasi/pembelian", 
+        icon: ShoppingCart 
+      },
+      { 
+        name: "Distribusi Obat", 
+        href: "/admin/gudang-farmasi/distribusi", 
+        icon: Truck 
+      },
+      { 
+        name: "Retur", 
+        href: "/admin/gudang-farmasi/retur", 
+        icon: Undo2 
+      },
+      { 
+        name: "Kartu Stok", 
+        href: "/admin/gudang-farmasi/kartu-stok", 
+        icon: ClipboardList 
+      },
     ],
   },
   {
@@ -234,51 +283,7 @@ const navigation: NavGroup[] = [
       { name: "Backup Data", href: "/admin/pengaturan/backup", icon: Database },
     ],
   },
-  {
-    label: "Gudang Farmasi",
-    items: [
-      { 
-        name: "Master Obat", 
-        href: "/admin/gudang-farmasi/master-obat", 
-        icon: Pill 
-      },
-      { 
-        name: "Kamus KFA", 
-        href: "/admin/gudang-farmasi/kfa", 
-        icon: Search 
-      },
-      { 
-        name: "Master Supplier", 
-        href: "/admin/gudang-farmasi/master-supplier", 
-        icon: Truck 
-      },
-      { 
-        name: "Medicine Stok", 
-        href: "/admin/gudang-farmasi/stok", 
-        icon: Package 
-      },
-      { 
-        name: "Pembelian Obat", 
-        href: "/admin/gudang-farmasi/pembelian", 
-        icon: ShoppingCart 
-      },
-      { 
-        name: "Distribusi Obat", 
-        href: "/admin/gudang-farmasi/distribusi", 
-        icon: Truck 
-      },
-      { 
-        name: "Retur", 
-        href: "/admin/gudang-farmasi/retur", 
-        icon: Undo2 
-      },
-      { 
-        name: "Kartu Stok", 
-        href: "/admin/gudang-farmasi/kartu-stok", 
-        icon: ClipboardList 
-      },
-    ],
-  },
+  
   {
     label: "Dashboard Dinkes",
     items: [
@@ -372,6 +377,90 @@ function NavItemWithSubMenu({
   );
 }
 
+// Global component to handle category expansion/collapse
+function NavGroupCollapsible({ 
+  group, 
+  groupIndex, 
+  pathname 
+}: { 
+  group: NavGroup; 
+  groupIndex: number;
+  pathname: string;
+}) {
+  // Check if any item in this group is active
+  const isAnyItemActive = group.items.some(item => {
+    if (item.href === pathname) return true;
+    if (item.href && item.href !== "/admin" && pathname.startsWith(item.href + "/")) return true;
+    if (item.subItems?.some(sub => pathname === sub.href || pathname.startsWith(sub.href + "/"))) return true;
+    return false;
+  });
+
+  const [isOpen, setIsOpen] = useState(isAnyItemActive || groupIndex === 0);
+
+  // Sync open state with active items
+  useEffect(() => {
+    if (isAnyItemActive) {
+      setIsOpen(true);
+    }
+  }, [isAnyItemActive]);
+
+  return (
+    <div className={cn(groupIndex > 0 && "mt-1 border-t pt-1")}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between px-4 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors group"
+      >
+        <span>{group.label}</span>
+        <ChevronRight 
+          className={cn(
+            "h-3 w-3 transition-transform duration-200",
+            isOpen && "rotate-90"
+          )} 
+        />
+      </button>
+
+      <div className={cn(
+        "space-y-0.5 px-2 overflow-hidden transition-all duration-300 ease-in-out",
+        isOpen ? "max-h-[2000px] opacity-100 mt-1" : "max-h-0 opacity-0"
+      )}>
+        {group.items.map((item) => {
+          if (item.subItems && item.subItems.length > 0) {
+            return (
+              <NavItemWithSubMenu 
+                key={item.name} 
+                item={item} 
+                pathname={pathname} 
+              />
+            );
+          }
+          
+          const isActive = pathname === item.href || 
+            (item.href && item.href !== "/admin" && pathname.startsWith(item.href + "/"));
+
+          return (
+            <Link
+              key={item.href || item.name}
+              href={item.href || "#"}
+              className={cn(
+                "group relative flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
+                isActive
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              {isActive && (
+                <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-primary" />
+              )}
+              <item.icon className="h-4 w-4 shrink-0" />
+              <span>{item.name}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function Sidebar({ collapsed, onToggle, open, onOpenChange }: SidebarProps) {
   const pathname = usePathname();
 
@@ -422,51 +511,12 @@ export function Sidebar({ collapsed, onToggle, open, onOpenChange }: SidebarProp
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-3">
           {navigation.map((group, groupIndex) => (
-            <div key={group.label} className={cn(groupIndex > 0 && "mt-4")}>
-              <div className="mb-1.5 px-4">
-                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  {group.label}
-                </span>
-              </div>
-
-              <div className="space-y-0.5 px-2">
-                {group.items.map((item) => {
-                  // If item has subItems, render with submenu
-                  if (item.subItems && item.subItems.length > 0) {
-                    return (
-                      <NavItemWithSubMenu 
-                        key={item.name} 
-                        item={item} 
-                        pathname={pathname} 
-                      />
-                    );
-                  }
-                  
-                  // Otherwise render as regular link
-                  const isActive = pathname === item.href || 
-                    (item.href && item.href !== "/admin" && pathname.startsWith(item.href + "/"));
-
-                  return (
-                    <Link
-                      key={item.href || item.name}
-                      href={item.href || "#"}
-                      className={cn(
-                        "group relative flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      {isActive && (
-                        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-primary" />
-                      )}
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      <span>{item.name}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
+            <NavGroupCollapsible 
+              key={group.label}
+              group={group}
+              groupIndex={groupIndex}
+              pathname={pathname}
+            />
           ))}
         </nav>
 

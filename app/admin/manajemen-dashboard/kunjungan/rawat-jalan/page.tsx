@@ -33,6 +33,11 @@ const insuranceData = [
 ];
 
 export default function RawatJalanPage() {
+  const handleFilter = (from: Date | undefined, to: Date | undefined) => {
+    console.log("Filtering Rawat Jalan data from:", from, "to:", to);
+    // In a real app, this would trigger a data fetch
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -42,7 +47,7 @@ export default function RawatJalanPage() {
             Analisis dan statistik kunjungan pasien rawat jalan
           </p>
         </div>
-        <DashboardFilter />
+        <DashboardFilter onFilter={handleFilter} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

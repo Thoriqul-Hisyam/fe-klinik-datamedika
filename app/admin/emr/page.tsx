@@ -37,6 +37,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 // Mock data for patient registrations in EMR context
@@ -99,7 +103,8 @@ const dokterOptions = ["Semua Dokter", "dr. Sarah", "drg. Budi", "dr. Rina, Sp.A
 
 export default function EMRListPage() {
   const [search, setSearch] = useState("");
-  const [filterTanggal, setFilterTanggal] = useState(new Date().toISOString().split("T")[0]);
+  const [dateFrom, setDateFrom] = useState(new Date().toISOString().split("T")[0]);
+  const [dateTo, setDateTo] = useState(new Date().toISOString().split("T")[0]);
   const [filterPoli, setFilterPoli] = useState("Semua Poli");
   const [filterStatus, setFilterStatus] = useState("Semua Status");
   const [filterDokter, setFilterDokter] = useState("Semua Dokter");
@@ -111,7 +116,7 @@ export default function EMRListPage() {
       reg.nama.toLowerCase().includes(search.toLowerCase()) ||
       reg.noRM.toLowerCase().includes(search.toLowerCase()) ||
       reg.noReg.toLowerCase().includes(search.toLowerCase());
-    const matchesTanggal = !filterTanggal || reg.tanggal === filterTanggal;
+    const matchesTanggal = (!dateFrom || reg.tanggal >= dateFrom) && (!dateTo || reg.tanggal <= dateTo);
     const matchesPoli = filterPoli === "Semua Poli" || reg.poli === filterPoli;
     const matchesStatus = filterStatus === "Semua Status" || reg.status === filterStatus;
     const matchesDokter = filterDokter === "Semua Dokter" || reg.dokter === filterDokter;
@@ -131,14 +136,17 @@ export default function EMRListPage() {
 
   const hasActiveFilters = 
     search !== "" || 
-    filterTanggal !== new Date().toISOString().split("T")[0] ||
+    dateFrom !== new Date().toISOString().split("T")[0] ||
+    dateTo !== new Date().toISOString().split("T")[0] ||
     filterPoli !== "Semua Poli" ||
     filterStatus !== "Semua Status" ||
     filterDokter !== "Semua Dokter";
 
   const clearFilters = () => {
     setSearch("");
-    setFilterTanggal(new Date().toISOString().split("T")[0]);
+    const today = new Date().toISOString().split("T")[0];
+    setDateFrom(today);
+    setDateTo(today);
     setFilterPoli("Semua Poli");
     setFilterStatus("Semua Status");
     setFilterDokter("Semua Dokter");
@@ -170,15 +178,59 @@ export default function EMRListPage() {
 
             <div className="flex flex-wrap items-center gap-2">
               {/* Date Filter */}
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="date"
-                  value={filterTanggal}
-                  onChange={(e) => setFilterTanggal(e.target.value)}
-                  className="pl-9 h-10 w-[160px] border-muted-foreground/20"
-                />
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "h-10 w-[160px] justify-start text-left font-normal border-muted-foreground/20",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(new Date(dateFrom), "dd MMM yyyy") : <span>Dari Tanggal</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateFrom ? new Date(dateFrom) : undefined}
+                    onSelect={(date) => {
+                      setDateFrom(date ? format(date, "yyyy-MM-dd") : "");
+                      setCurrentPage(1);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <span className="text-muted-foreground">-</span>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "h-10 w-[160px] justify-start text-left font-normal border-muted-foreground/20",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dateTo ? format(new Date(dateTo), "dd MMM yyyy") : <span>Sampai Tanggal</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateTo ? new Date(dateTo) : undefined}
+                    onSelect={(date) => {
+                      setDateTo(date ? format(date, "yyyy-MM-dd") : "");
+                      setCurrentPage(1);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
 
               {/* Poli Filter */}
               <DropdownMenu>

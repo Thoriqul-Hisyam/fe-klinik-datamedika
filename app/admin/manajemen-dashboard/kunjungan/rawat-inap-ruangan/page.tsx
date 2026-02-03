@@ -21,6 +21,10 @@ const insuranceData = [
 ];
 
 export default function RawatInapRuanganPage() {
+  const handleFilter = (from: Date | undefined, to: Date | undefined) => {
+    console.log("Filtering Rawat Inap Ruangan data from:", from, "to:", to);
+  };
+
   const totalOccupied = roomData.reduce((acc, curr) => acc + curr.occupied, 0);
   const totalCapacity = roomData.reduce((acc, curr) => acc + curr.capacity, 0);
   
@@ -33,7 +37,7 @@ export default function RawatInapRuanganPage() {
             Monitoring tingkat hunian bed per paviliun/ruangan
           </p>
         </div>
-        <DashboardFilter />
+        <DashboardFilter onFilter={handleFilter} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

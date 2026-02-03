@@ -19,6 +19,10 @@ const diseaseData = [
 ];
 
 export default function MorbiditasPage() {
+  const handleFilter = (from: Date | undefined, to: Date | undefined) => {
+    console.log("Filtering Morbiditas data from:", from, "to:", to);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -28,7 +32,7 @@ export default function MorbiditasPage() {
             Analisis pola penyakit dan morbiditas pasien (10 Penyakit Terbanyak)
           </p>
         </div>
-        <DashboardFilter />
+        <DashboardFilter onFilter={handleFilter} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

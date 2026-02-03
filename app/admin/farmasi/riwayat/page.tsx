@@ -24,6 +24,10 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // Mock data for pharmacy history
 const historyData = [
@@ -71,11 +75,13 @@ const historyData = [
 
 export default function PrescriptionHistoryPage() {
   const [search, setSearch] = useState("");
+  const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
 
   const filteredData = historyData.filter(
     (h) =>
-      h.namaPasien.toLowerCase().includes(search.toLowerCase()) ||
-      h.noResep.toLowerCase().includes(search.toLowerCase())
+      (h.namaPasien.toLowerCase().includes(search.toLowerCase()) ||
+      h.noResep.toLowerCase().includes(search.toLowerCase())) &&
+      (!filterDate || h.tanggal === filterDate)
   );
 
   return (
@@ -112,7 +118,28 @@ export default function PrescriptionHistoryPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Input type="date" className="w-[160px]" defaultValue="2026-01-20" />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-[160px] justify-start text-left font-normal",
+                      !filterDate && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {filterDate ? format(new Date(filterDate), "dd MMM yyyy") : <span>Pilih Tanggal</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={filterDate ? new Date(filterDate) : undefined}
+                    onSelect={(date) => setFilterDate(date ? format(date, "yyyy-MM-dd") : "")}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               <Button variant="outline">
                 <Filter className="h-4 w-4 mr-2" />
                 Filter

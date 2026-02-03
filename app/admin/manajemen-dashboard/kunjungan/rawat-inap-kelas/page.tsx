@@ -23,6 +23,10 @@ const insuranceData = [
 ];
 
 export default function RawatInapKelasPage() {
+  const handleFilter = (from: Date | undefined, to: Date | undefined) => {
+    console.log("Filtering Rawat Inap Kelas data from:", from, "to:", to);
+  };
+
   const totalActive = classData.reduce((acc, curr) => acc + curr.active, 0);
   const totalBeds = classData.reduce((acc, curr) => acc + curr.total, 0);
   const occupancyRate = Math.round((totalActive / totalBeds) * 100);
@@ -33,10 +37,10 @@ export default function RawatInapKelasPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard Kunjungan Rawat Inap per Kelas</h1>
           <p className="text-muted-foreground">
-            Analisis d an statistik kunjungan rawat inap berdasarkan kelas perawatan
+            Analisis dan statistik kunjungan rawat inap berdasarkan kelas perawatan
           </p>
         </div>
-        <DashboardFilter />
+        <DashboardFilter onFilter={handleFilter} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

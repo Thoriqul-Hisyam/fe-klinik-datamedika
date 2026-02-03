@@ -11,6 +11,7 @@ import {
   Stethoscope,
   Activity,
   History,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,10 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 // Mock data for visit history
@@ -76,11 +81,16 @@ const historyData = [
 
 export default function VisitHistoryPage() {
   const [search, setSearch] = useState("");
+  const today = new Date().toISOString().split("T")[0];
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
 
   const filteredData = historyData.filter(
     (h) =>
-      h.namaPasien.toLowerCase().includes(search.toLowerCase()) ||
-      h.noRM.toLowerCase().includes(search.toLowerCase())
+      (h.namaPasien.toLowerCase().includes(search.toLowerCase()) ||
+      h.noRM.toLowerCase().includes(search.toLowerCase())) &&
+      (!dateFrom || h.tanggal >= dateFrom) &&
+      (!dateTo || h.tanggal <= dateTo)
   );
 
   return (
@@ -124,7 +134,7 @@ export default function VisitHistoryPage() {
       </div>
 
       {/* Filter and Search */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -134,10 +144,63 @@ export default function VisitHistoryPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button variant="outline" size="sm">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
+
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                size="sm"
+                className={cn(
+                  "h-9 w-[160px] justify-start text-left font-normal",
+                  !dateFrom && "text-muted-foreground"
+                )}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                {dateFrom ? format(new Date(dateFrom), "dd MMM yyyy") : <span>Dari Tanggal</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={dateFrom ? new Date(dateFrom) : undefined}
+                onSelect={(date) => setDateFrom(date ? format(date, "yyyy-MM-dd") : "")}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          <span className="text-muted-foreground">-</span>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                size="sm"
+                className={cn(
+                  "h-9 w-[160px] justify-start text-left font-normal",
+                  !dateTo && "text-muted-foreground"
+                )}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                {dateTo ? format(new Date(dateTo), "dd MMM yyyy") : <span>Sampai Tanggal</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={dateTo ? new Date(dateTo) : undefined}
+                onSelect={(date) => setDateTo(date ? format(date, "yyyy-MM-dd") : "")}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Button variant="secondary" size="sm" className="h-9">
+            <Filter className="h-4 w-4 mr-2" />
+            Filter
+          </Button>
+        </div>
       </div>
 
       {/* Visit List Table */}

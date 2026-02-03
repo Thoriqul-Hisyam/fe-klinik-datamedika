@@ -13,6 +13,7 @@ import {
   Search,
   ArrowUpRight,
   ArrowDownRight,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,10 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // Mock data for financial transactions
 const transactions = [
@@ -83,11 +88,19 @@ const transactions = [
 
 export default function FinanceReportPage() {
   const [search, setSearch] = useState("");
+  const today = new Date().toISOString().split("T")[0];
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
 
   const filteredData = transactions.filter(
-    (t) =>
-      t.nama.toLowerCase().includes(search.toLowerCase()) ||
-      t.invoice.toLowerCase().includes(search.toLowerCase())
+    (t) => {
+      const matchesSearch = t.nama.toLowerCase().includes(search.toLowerCase()) ||
+                           t.invoice.toLowerCase().includes(search.toLowerCase());
+      const txnDate = t.tanggal.split(" ")[0];
+      const matchesDate = (!dateFrom || txnDate >= dateFrom) && 
+                         (!dateTo || txnDate <= dateTo);
+      return matchesSearch && matchesDate;
+    }
   );
 
   return (
@@ -169,9 +182,51 @@ export default function FinanceReportPage() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Input type="date" className="w-[160px]" defaultValue="2026-01-01" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-[160px] justify-start text-left font-normal",
+                  !dateFrom && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateFrom ? format(new Date(dateFrom), "dd MMM yyyy") : <span>Dari Tanggal</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateFrom ? new Date(dateFrom) : undefined}
+                onSelect={(date) => setDateFrom(date ? format(date, "yyyy-MM-dd") : "")}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
           <span className="text-muted-foreground">-</span>
-          <Input type="date" className="w-[160px]" defaultValue="2026-01-22" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-[160px] justify-start text-left font-normal",
+                  !dateTo && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateTo ? format(new Date(dateTo), "dd MMM yyyy") : <span>Sampai Tanggal</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateTo ? new Date(dateTo) : undefined}
+                onSelect={(date) => setDateTo(date ? format(date, "yyyy-MM-dd") : "")}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
           <Button variant="secondary" size="sm" className="h-10">
             <Filter className="h-4 w-4 mr-2" />
             Filter

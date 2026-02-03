@@ -37,6 +37,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { generateNoReg } from "@/lib/utils";
 import Link from "next/link";
 
@@ -132,7 +136,7 @@ export default function PendaftaranPasienPage() {
   const [search, setSearch] = useState("");
   const [filterPoli, setFilterPoli] = useState("Semua Poli");
   const [filterPembayaran, setFilterPembayaran] = useState("Semua");
-  const [filterTanggal, setFilterTanggal] = useState("");
+  const [filterTanggal, setFilterTanggal] = useState(new Date().toISOString().split("T")[0]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -183,16 +187,10 @@ export default function PendaftaranPasienPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" asChild>
+          <Button size="sm"asChild>
             <Link href="/admin/pasien/registrasi">
               <Users className="h-4 w-4 mr-2" />
-              Daftar Pasien Lama
-            </Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/admin/pasien/baru">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Pasien Baru
+              Daftar Pasien
             </Link>
           </Button>
         </div>
@@ -221,18 +219,32 @@ export default function PendaftaranPasienPage() {
             </div>
 
             {/* Date Filter */}
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                type="date"
-                value={filterTanggal}
-                onChange={(e) => {
-                  setFilterTanggal(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="pl-9 h-9 w-[160px]"
-              />
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  size="sm"
+                  className={cn(
+                    "h-9 w-[180px] justify-start text-left font-normal",
+                    !filterTanggal && "text-muted-foreground"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {filterTanggal ? format(new Date(filterTanggal), "dd MMM yyyy") : <span>Pilih Tanggal</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={filterTanggal ? new Date(filterTanggal) : undefined}
+                  onSelect={(date) => {
+                    setFilterTanggal(date ? format(date, "yyyy-MM-dd") : "");
+                    setCurrentPage(1);
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
 
             {/* Poli Filter */}
             <DropdownMenu>
@@ -385,17 +397,6 @@ export default function PendaftaranPasienPage() {
                                 Aksi
                               </DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`/admin/emr/pasien/${
-                                    reg.noReg || generateNoReg(reg.noRM)
-                                  }`}
-                                  className="flex items-center w-full"
-                                >
-                                  <FileText className="h-3.5 w-3.5 mr-2" />
-                                  Buka RME
-                                </Link>
-                              </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Eye className="h-3.5 w-3.5 mr-2" />
                                 Lihat Detail
