@@ -95,13 +95,18 @@ const navigation: NavGroup[] = [
     ],
   },
   {
-    label: "EMR",
+    label: "Rekam Medis (EMR)",
     items: [
-      { name: "Rekam Medis", href: "/admin/emr", icon: FileText },
+      { name: "EMR Rawat Jalan", href: "/admin/rawat-jalan/emr", icon: Users },
+      { name: "EMR Rawat Inap", href: "/admin/rawat-inap/emr", icon: BedDouble },
+      { name: "EMR Kamar Operasi", href: "/admin/ok/emr", icon: Scissors },
+      { name: "EMR Kamar Bersalin", href: "/admin/vk/emr", icon: Baby },
       { name: "Riwayat Kunjungan", href: "/admin/emr/kunjungan", icon: FolderOpen },
       { name: "Dokumen Pasien", href: "/admin/emr/dokumen", icon: FileCheck },
     ],
   },
+
+
   {
     label: "Treatment Plan",
     items: [
