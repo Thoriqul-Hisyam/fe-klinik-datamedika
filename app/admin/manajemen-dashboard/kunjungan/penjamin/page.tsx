@@ -1,18 +1,19 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldCheck, CreditCard, Users, PieChart as PieChartIcon, Building } from "lucide-react";
+import { ShieldCheck, CreditCard, Users, PieChart as PieChartIcon, Building, Loader2 } from "lucide-react";
 import { DashboardFilter } from "@/components/admin/dashboard/dashboard-filter";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 
-const insuranceDist = [
+const mockInsuranceDist = [
   { name: "BPJS Kesehatan", value: 65, color: "#16a34a" },
   { name: "Asuransi Swasta", value: 15, color: "#2563eb" },
   { name: "Umum / Pribadi", value: 18, color: "#9333ea" },
   { name: "Perusahaan", value: 2, color: "#ea580c" },
 ];
 
-const revenueByInsurance = [
+const mockRevenueByInsurance = [
   { name: "BPJS", amount: 45000000 },
   { name: "Swasta", amount: 28000000 },
   { name: "Umum", amount: 15000000 },
@@ -29,9 +30,38 @@ const formatIDR = (value: number) => {
 };
 
 export default function PenjaminPage() {
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ["dashboard-penjamin"],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return {
+        insuranceDist: mockInsuranceDist,
+        revenueByInsurance: mockRevenueByInsurance,
+        stats: {
+          bpjs: { total: "1,240", percent: "65%" },
+          private: { total: "345", note: "Admedika, Prudential, dll" },
+          general: { total: "412", note: "Pembayaran Tunai/QRIS" },
+          corporate: { total: "45", note: "Kontrak korporat" }
+        }
+      };
+    }
+  });
+
   const handleFilter = (from: Date | undefined, to: Date | undefined) => {
     console.log("Filtering Penjamin data from:", from, "to:", to);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground font-medium">Memuat data dashboard...</span>
+      </div>
+    );
+  }
+
+  const { insuranceDist, revenueByInsurance, stats } = dashboardData!;
 
   return (
     <div className="space-y-6">
@@ -52,8 +82,8 @@ export default function PenjaminPage() {
             <ShieldCheck className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,240</div>
-            <p className="text-xs text-muted-foreground">65% dari total kunjungan</p>
+            <div className="text-2xl font-bold">{stats.bpjs.total}</div>
+            <p className="text-xs text-muted-foreground">{stats.bpjs.percent} dari total kunjungan</p>
           </CardContent>
         </Card>
         <Card>
@@ -62,8 +92,8 @@ export default function PenjaminPage() {
             <CreditCard className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">345</div>
-            <p className="text-xs text-muted-foreground">Admedika, Prudential, dll</p>
+            <div className="text-2xl font-bold">{stats.private.total}</div>
+            <p className="text-xs text-muted-foreground">{stats.private.note}</p>
           </CardContent>
         </Card>
         <Card>
@@ -72,8 +102,8 @@ export default function PenjaminPage() {
             <Users className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">412</div>
-            <p className="text-xs text-muted-foreground">Pembayaran Tunai/QRIS</p>
+            <div className="text-2xl font-bold">{stats.general.total}</div>
+            <p className="text-xs text-muted-foreground">{stats.general.note}</p>
           </CardContent>
         </Card>
         <Card>
@@ -82,8 +112,8 @@ export default function PenjaminPage() {
             <Building className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45</div>
-            <p className="text-xs text-muted-foreground">Kontrak korporat</p>
+            <div className="text-2xl font-bold">{stats.corporate.total}</div>
+            <p className="text-xs text-muted-foreground">{stats.corporate.note}</p>
           </CardContent>
         </Card>
       </div>
@@ -108,7 +138,7 @@ export default function PenjaminPage() {
                     dataKey="value"
                     label={({name, percent}) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                   >
-                    {insuranceDist.map((entry, index) => (
+                    {insuranceDist.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -132,7 +162,7 @@ export default function PenjaminPage() {
                    <YAxis dataKey="name" type="category" width={80} />
                    <Tooltip formatter={(value) => formatIDR(Number(value))} />
                    <Bar dataKey="amount" fill="#3b82f6" radius={[0, 4, 4, 0]}>
-                      {revenueByInsurance.map((entry, index) => (
+                      {revenueByInsurance.map((entry: any, index: number) => (
                            <Cell key={`cell-${index}`} fill={insuranceDist[index % insuranceDist.length].color} />
                       ))}
                    </Bar>

@@ -497,7 +497,7 @@ export default function UnifiedRegistrationPage() {
                              mode="single"
                              selected={formData.tglLahir ? new Date(formData.tglLahir) : undefined}
                              onSelect={(date) => handleInputChange("tglLahir", date ? format(date, "yyyy-MM-dd") : "")}
-                             initialFocus
+
                            />
                          </PopoverContent>
                        </Popover>

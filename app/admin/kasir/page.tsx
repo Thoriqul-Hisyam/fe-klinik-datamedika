@@ -1,24 +1,55 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  getPaginationRowModel,
+  ColumnDef,
+} from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/admin/shared/page-header";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Search, User, Calendar as CalendarIcon, Filter as FilterIcon, X } from "lucide-react";
+import { 
+  CreditCard, 
+  Search, 
+  User, 
+  Calendar as CalendarIcon, 
+  Filter as FilterIcon, 
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Loader2
+} from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
 // Dummy data for registrations waiting for payment
-const waitingPayments = [
+const waitingPaymentsList = [
   { 
     noReg: "REG-20260203001", 
     noRM: "001234", 
@@ -71,6 +102,8 @@ const waitingPayments = [
   },
 ];
 
+type WaitingPayment = typeof waitingPaymentsList[0];
+
 export default function KasirSearchPage() {
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState<Date | undefined>(new Date());
@@ -79,30 +112,139 @@ export default function KasirSearchPage() {
   const [selectedPenjamin, setSelectedPenjamin] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
-  const filteredData = useMemo(() => {
-    return waitingPayments.filter((item) => {
-      // Search filter
-      const matchesSearch = 
-        item.namaPasien.toLowerCase().includes(search.toLowerCase()) ||
-        item.noReg.toLowerCase().includes(search.toLowerCase()) ||
-        item.noRM.toLowerCase().includes(search.toLowerCase());
-      
-      // Date filter
-      let matchesDate = true;
-      if (fromDate || toDate) {
-        const itemDate = new Date(item.tanggal);
-        if (fromDate && itemDate < new Date(format(fromDate, "yyyy-MM-dd"))) matchesDate = false;
-        if (toDate && itemDate > new Date(format(toDate, "yyyy-MM-dd"))) matchesDate = false;
-      }
+  const { data: waitingPayments = [], isLoading } = useQuery({
+    queryKey: [
+      "kasir-waiting-payments", 
+      search, 
+      fromDate ? format(fromDate, "yyyy-MM-dd") : null, 
+      toDate ? format(toDate, "yyyy-MM-dd") : null, 
+      selectedPoli, 
+      selectedPenjamin, 
+      selectedStatus
+    ],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return waitingPaymentsList.filter((item) => {
+        const matchesSearch = 
+          item.namaPasien.toLowerCase().includes(search.toLowerCase()) ||
+          item.noReg.toLowerCase().includes(search.toLowerCase()) ||
+          item.noRM.toLowerCase().includes(search.toLowerCase());
+        
+        let matchesDate = true;
+        if (fromDate || toDate) {
+          const itemDate = new Date(item.tanggal);
+          if (fromDate && itemDate < new Date(format(fromDate, "yyyy-MM-dd"))) matchesDate = false;
+          if (toDate && itemDate > new Date(format(toDate, "yyyy-MM-dd"))) matchesDate = false;
+        }
 
-      // Dropdown filters
-      const matchesPoli = selectedPoli === "all" || item.poli === selectedPoli;
-      const matchesPenjamin = selectedPenjamin === "all" || item.penjamin === selectedPenjamin;
-      const matchesStatus = selectedStatus === "all" || item.status === selectedStatus;
+        const matchesPoli = selectedPoli === "all" || item.poli === selectedPoli;
+        const matchesPenjamin = selectedPenjamin === "all" || item.penjamin === selectedPenjamin;
+        const matchesStatus = selectedStatus === "all" || item.status === selectedStatus;
 
-      return matchesSearch && matchesDate && matchesPoli && matchesPenjamin && matchesStatus;
-    });
-  }, [search, fromDate, toDate, selectedPoli, selectedPenjamin, selectedStatus]);
+        return matchesSearch && matchesDate && matchesPoli && matchesPenjamin && matchesStatus;
+      });
+    },
+  });
+
+  const columns = useMemo<ColumnDef<WaitingPayment>[]>(
+    () => [
+      {
+        accessorKey: "noReg",
+        header: "No. Registrasi",
+        cell: (info) => {
+          const item = info.row.original;
+          return (
+            <div>
+              <div className="text-sm font-medium">{item.noReg}</div>
+              <div className="text-[10px] text-muted-foreground">RM: {item.noRM}</div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "namaPasien",
+        header: "Nama Pasien",
+        cell: (info) => {
+          const item = info.row.original;
+          return (
+            <div>
+              <div className="font-semibold text-sm">{item.namaPasien}</div>
+              <div className="text-[10px] text-muted-foreground">{item.tanggal}</div>
+            </div>
+          );
+        },
+      },
+      {
+        header: "Poli / Unit",
+        cell: (info) => {
+          const item = info.row.original;
+          return (
+            <div>
+              <div className="text-sm">{item.poli}</div>
+              <div className="text-[10px] text-muted-foreground">{item.dokter}</div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "penjamin",
+        header: "Penjamin",
+        cell: (info) => (
+          <Badge variant="outline" className="font-normal border-primary/20 bg-primary/5">
+            {info.getValue() as string}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: (info) => {
+          const status = info.getValue() as string;
+          return (
+            <Badge 
+              className={cn(
+                "text-[10px] font-medium border-none",
+                status === "Terkunci" ? "bg-red-100 text-red-700 hover:bg-red-100" : 
+                status === "Terbuka" ? "bg-green-100 text-green-700 hover:bg-green-100" :
+                "bg-blue-100 text-blue-700 hover:bg-blue-100"
+              )}
+              variant="secondary"
+            >
+              {status}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: () => <div className="text-right">Aksi</div>,
+        cell: (info) => (
+          <div className="text-right">
+            <Link href={`/admin/kasir/${info.row.original.noReg}`}>
+              <Button size="sm" className="h-8 gap-2">
+                 Proses
+              </Button>
+            </Link>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: waitingPayments,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    autoResetAll: false,
+    initialState: {
+      pagination: {
+        pageSize: 8,
+      },
+    },
+  });
 
   const resetFilters = () => {
     setSearch("");
@@ -155,7 +297,7 @@ export default function KasirSearchPage() {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={fromDate} onSelect={setFromDate} initialFocus />
+                    <Calendar mode="single" selected={fromDate} onSelect={setFromDate} />
                   </PopoverContent>
                 </Popover>
                 <span className="text-muted-foreground">-</span>
@@ -171,7 +313,6 @@ export default function KasirSearchPage() {
                       mode="single" 
                       selected={toDate} 
                       onSelect={setToDate} 
-                      initialFocus 
                       disabled={(date) => fromDate ? date < fromDate : false}
                     />
                   </PopoverContent>
@@ -246,7 +387,7 @@ export default function KasirSearchPage() {
             <User className="h-5 w-5 text-primary" />
             Antrian Pembayaran
             <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary border-none">
-              {filteredData.length} Pasien
+              {waitingPayments.length} Pasien
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -254,61 +395,44 @@ export default function KasirSearchPage() {
           <div className="rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="font-bold">No. Registrasi</TableHead>
-                  <TableHead className="font-bold">Nama Pasien</TableHead>
-                  <TableHead className="font-bold">Poli / Unit</TableHead>
-                  <TableHead className="font-bold">Penjamin</TableHead>
-                  <TableHead className="font-bold">Status</TableHead>
-                  <TableHead className="text-right font-bold">Aksi</TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="bg-muted/50">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id} className="font-bold">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
-                {filteredData.length > 0 ? (
-                  filteredData.map((item) => (
-                    <TableRow key={item.noReg} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium">
-                        <div className="text-sm">{item.noReg}</div>
-                        <div className="text-[10px] text-muted-foreground">RM: {item.noRM}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-semibold text-sm">{item.namaPasien}</div>
-                        <div className="text-[10px] text-muted-foreground">{item.tanggal}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{item.poli}</div>
-                        <div className="text-[10px] text-muted-foreground">{item.dokter}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-normal border-primary/20 bg-primary/5">
-                          {item.penjamin}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={cn(
-                            "text-[10px] font-medium border-none",
-                            item.status === "Terkunci" ? "bg-red-100 text-red-700 hover:bg-red-100" : 
-                            item.status === "Terbuka" ? "bg-green-100 text-green-700 hover:bg-green-100" :
-                            "bg-blue-100 text-blue-700 hover:bg-blue-100"
-                          )}
-                          variant="secondary"
-                        >
-                          {item.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Link href={`/admin/kasir/${item.noReg}`}>
-                          <Button size="sm" className="h-8 gap-2">
-                             Proses
-                          </Button>
-                        </Link>
-                      </TableCell>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground">Memuat data antrian...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : table.getRowModel().rows.length > 0 ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id} className="hover:bg-muted/30 transition-colors">
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={columns.length} className="h-32 text-center text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <Search className="h-8 w-8 opacity-20" />
                         <p>Data tidak ditemukan dengan filter tersebut.</p>
@@ -318,6 +442,35 @@ export default function KasirSearchPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+          
+          <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground px-2">
+             <div>
+                Showing {table.getRowModel().rows.length} of {waitingPayments.length} patients
+             </div>
+             <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0" 
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="font-medium text-foreground">
+                    {table.getState().pagination.pageIndex + 1}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+             </div>
           </div>
         </CardContent>
       </Card>

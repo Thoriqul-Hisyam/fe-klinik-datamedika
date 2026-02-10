@@ -1,11 +1,12 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, TrendingUp, Clock } from "lucide-react";
+import { Users, TrendingUp, Clock, Loader2 } from "lucide-react";
 import { DashboardFilter } from "@/components/admin/dashboard/dashboard-filter";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend } from "recharts";
 
-const visitData = [
+const mockVisitData = [
   { name: "08:00", pasien: 12 },
   { name: "09:00", pasien: 25 },
   { name: "10:00", pasien: 35 },
@@ -16,7 +17,7 @@ const visitData = [
   { name: "15:00", pasien: 15 },
 ];
 
-const weeklyData = [
+const mockWeeklyData = [
   { name: "Senin", total: 145 },
   { name: "Selasa", total: 132 },
   { name: "Rabu", total: 156 },
@@ -26,17 +27,46 @@ const weeklyData = [
   { name: "Minggu", total: 65 },
 ];
 
-const insuranceData = [
+const mockInsuranceData = [
   { name: "BPJS Kesehatan", value: 85, color: "#22c55e" },
   { name: "Umum/Pribadi", value: 40, color: "#3b82f6" },
   { name: "Asuransi Swasta", value: 20, color: "#f97316" },
 ];
 
 export default function RawatJalanPage() {
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ["dashboard-rawat-jalan"],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return {
+        visitData: mockVisitData,
+        weeklyData: mockWeeklyData,
+        insuranceData: mockInsuranceData,
+        stats: {
+          totalVisits: 145,
+          newPatients: 32,
+          avgWaitTime: "24 min",
+          satisfaction: 4.8
+        }
+      };
+    }
+  });
+
   const handleFilter = (from: Date | undefined, to: Date | undefined) => {
     console.log("Filtering Rawat Jalan data from:", from, "to:", to);
-    // In a real app, this would trigger a data fetch
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground font-medium">Memuat data dashboard...</span>
+      </div>
+    );
+  }
+
+  const { visitData, weeklyData, insuranceData, stats } = dashboardData!;
 
   return (
     <div className="space-y-6">
@@ -57,7 +87,7 @@ export default function RawatJalanPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">145</div>
+            <div className="text-2xl font-bold">{stats.totalVisits}</div>
             <p className="text-xs text-muted-foreground">+20.1% dari kemarin</p>
           </CardContent>
         </Card>
@@ -67,7 +97,7 @@ export default function RawatJalanPage() {
             <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">32</div>
+            <div className="text-2xl font-bold">{stats.newPatients}</div>
             <p className="text-xs text-muted-foreground">+5% dari kemarin</p>
           </CardContent>
         </Card>
@@ -77,7 +107,7 @@ export default function RawatJalanPage() {
             <Clock className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24 min</div>
+            <div className="text-2xl font-bold">{stats.avgWaitTime}</div>
             <p className="text-xs text-muted-foreground">-2 menit dari rata-rata</p>
           </CardContent>
         </Card>
@@ -87,7 +117,7 @@ export default function RawatJalanPage() {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4.8</div>
+            <div className="text-2xl font-bold">{stats.satisfaction}</div>
             <p className="text-xs text-muted-foreground">Skala 5.0</p>
           </CardContent>
         </Card>
@@ -111,7 +141,7 @@ export default function RawatJalanPage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} />
+                  <YAxis axisLine={false} tickLine={false} hide />
                   <Tooltip />
                   <Area type="monotone" dataKey="pasien" stroke="#0ea5e9" fillOpacity={1} fill="url(#colorPasien)" />
                 </AreaChart>
@@ -137,7 +167,7 @@ export default function RawatJalanPage() {
                                 paddingAngle={5}
                                 dataKey="value"
                             >
-                                {insuranceData.map((entry, index) => (
+                                {insuranceData.map((entry: any, index: number) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>
@@ -167,7 +197,7 @@ export default function RawatJalanPage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} />
+                  <YAxis axisLine={false} tickLine={false} hide />
                   <Tooltip />
                   <Area type="monotone" dataKey="total" stroke="#22c55e" fillOpacity={1} fill="url(#colorTotal)" />
                 </AreaChart>

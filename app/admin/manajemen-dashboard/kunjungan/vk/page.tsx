@@ -1,26 +1,56 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Baby, HeartPulse, Stethoscope, UserCheck } from "lucide-react";
+import { Baby, HeartPulse, Stethoscope, UserCheck, Loader2 } from "lucide-react";
 import { DashboardFilter } from "@/components/admin/dashboard/dashboard-filter";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 
-const methodData = [
+const mockMethodData = [
   { name: "Normal", value: 65, color: "#22c55e" },
   { name: "Caesar (SC)", value: 30, color: "#ef4444" },
   { name: "Vacuum", value: 5, color: "#eab308" },
 ];
 
-const insuranceData = [
+const mockInsuranceData = [
     { name: "BPJS", value: 80, color: "#22c55e" },
     { name: "Umum", value: 15, color: "#3b82f6" },
     { name: "Asuransi Lain", value: 5, color: "#f97316" },
 ];
 
 export default function VKPage() {
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ["dashboard-vk"],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return {
+        methodData: mockMethodData,
+        insuranceData: mockInsuranceData,
+        stats: {
+          today: { total: 5, normal: 3, sc: 2 },
+          healthyRate: "100%",
+          thisMonth: 85,
+          scRate: "30%"
+        }
+      };
+    }
+  });
+
   const handleFilter = (from: Date | undefined, to: Date | undefined) => {
     console.log("Filtering VK data from:", from, "to:", to);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground font-medium">Memuat data dashboard...</span>
+      </div>
+    );
+  }
+
+  const { methodData, insuranceData, stats } = dashboardData!;
 
   return (
     <div className="space-y-6">
@@ -41,8 +71,8 @@ export default function VKPage() {
             <Baby className="h-4 w-4 text-pink-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
-            <p className="text-xs text-muted-foreground">3 Normal, 2 SC</p>
+            <div className="text-2xl font-bold">{stats.today.total}</div>
+            <p className="text-xs text-muted-foreground">{stats.today.normal} Normal, {stats.today.sc} SC</p>
           </CardContent>
         </Card>
         <Card>
@@ -51,7 +81,7 @@ export default function VKPage() {
             <HeartPulse className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">100%</div>
+            <div className="text-2xl font-bold">{stats.healthyRate}</div>
             <p className="text-xs text-muted-foreground">APGAR Score &gt; 7</p>
           </CardContent>
         </Card>
@@ -61,7 +91,7 @@ export default function VKPage() {
             <UserCheck className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">85</div>
+            <div className="text-2xl font-bold">{stats.thisMonth}</div>
             <p className="text-xs text-muted-foreground">Total kelahiran</p>
           </CardContent>
         </Card>
@@ -71,7 +101,7 @@ export default function VKPage() {
             <Stethoscope className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">30%</div>
+            <div className="text-2xl font-bold">{stats.scRate}</div>
             <p className="text-xs text-muted-foreground">Dari total persalinan</p>
           </CardContent>
         </Card>
@@ -97,7 +127,7 @@ export default function VKPage() {
                     dataKey="value"
                     label={({name, percent}) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                   >
-                    {methodData.map((entry, index) => (
+                    {methodData.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -127,7 +157,7 @@ export default function VKPage() {
                             dataKey="value"
                             label={({name, percent}) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                         >
-                            {insuranceData.map((entry, index) => (
+                            {insuranceData.map((entry: any, index: number) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                         </Pie>

@@ -1,10 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  ColumnDef,
+} from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Printer, Save, Plus, Activity } from "lucide-react";
+import { Printer, Save, Plus, Activity, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+interface Observation {
+  jam: string;
+  pembukaan: string;
+  penurunan: string;
+  djj: string;
+  his: string;
+  darah: string;
+  nadi: string;
+  suhu: string;
+}
 
 interface PartografDigitalProps {
   noReg?: string;
@@ -16,11 +34,72 @@ interface PartografDigitalProps {
   };
 }
 
+const mockObservations: Observation[] = [
+  { jam: "08:00", pembukaan: "4", penurunan: "3/5", djj: "140", his: "3/10'/35\"", darah: "120/80", nadi: "88", suhu: "36.5" },
+  { jam: "12:00", pembukaan: "7", penurunan: "2/5", djj: "144", his: "4/10'/40\"", darah: "110/70", nadi: "92", suhu: "36.7" },
+];
+
 export function PartografDigital({ noReg, patientData }: PartografDigitalProps) {
-  const [observations, setObservations] = useState([
-    { jam: "08:00", pembukaan: "4", penurunan: "3/5", djj: "140", his: "3/10'/35\"", darah: "120/80", nadi: "88", suhu: "36.5" },
-    { jam: "12:00", pembukaan: "7", penurunan: "2/5", djj: "144", his: "4/10'/40\"", darah: "110/70", nadi: "92", suhu: "36.7" },
-  ]);
+  const { data: observations = [], isLoading } = useQuery({
+    queryKey: ["partograf-observations", noReg],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return mockObservations;
+    },
+    enabled: !!noReg,
+    initialData: mockObservations, // Fallback for demo
+  });
+
+  const columns = useMemo<ColumnDef<Observation>[]>(
+    () => [
+      {
+        accessorKey: "jam",
+        header: "Jam",
+        cell: (info) => <span className="font-bold text-xs">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "pembukaan",
+        header: "Pembukaan (cm)",
+        cell: (info) => <span className="text-sm font-black text-primary">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "penurunan",
+        header: "Penurunan",
+        cell: (info) => <span className="text-xs">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "djj",
+        header: "DJJ",
+        cell: (info) => <span className="text-xs font-medium text-blue-600">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "his",
+        header: "Kontraksi",
+        cell: (info) => <span className="text-xs text-orange-600 font-medium">{info.getValue() as string}</span>,
+      },
+      {
+        header: "Tanda Vital",
+        cell: (info) => {
+          const item = info.row.original;
+          return (
+            <div className="flex flex-col text-[10px] leading-tight group">
+              <span className="font-bold">TD: {item.darah}</span>
+              <span>N: {item.nadi} | S: {item.suhu}</span>
+            </div>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: observations,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    autoResetAll: false,
+  });
 
   const handlePrint = () => {
     if (!patientData || !noReg) {
@@ -89,7 +168,6 @@ export function PartografDigital({ noReg, patientData }: PartografDigitalProps) 
         </div>
       </div>
 
-      {/* Partograf Chart Mockup (Visual Representation) */}
       <div className="bg-card border rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col items-center justify-center min-h-[300px] border-dashed border-primary/30 bg-primary/5">
          <Activity className="h-12 w-12 text-primary/30 mb-4 animate-pulse" />
          <h4 className="font-bold text-primary italic">Visualisasi Grafik Partograf</h4>
@@ -99,33 +177,45 @@ export function PartografDigital({ noReg, patientData }: PartografDigitalProps) 
       <div className="rounded-xl border overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider">Jam</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider">Pembukaan (cm)</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider">Penurunan</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider">DJJ</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider">Kontraksi</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider">Tanda Vital</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {observations.map((obs, idx) => (
-              <TableRow key={idx} className="hover:bg-primary/5">
-                <TableCell className="font-bold text-xs">{obs.jam}</TableCell>
-                <TableCell className="text-sm font-black text-primary">{obs.pembukaan}</TableCell>
-                <TableCell className="text-xs">{obs.penurunan}</TableCell>
-                <TableCell className="text-xs font-medium text-blue-600">{obs.djj}</TableCell>
-                <TableCell className="text-xs text-orange-600 font-medium">{obs.his}</TableCell>
-                <TableCell className="text-[10px] leading-tight group">
-                   <div className="flex flex-col">
-                      <span className="font-bold">TD: {obs.darah}</span>
-                      <span>N: {obs.nadi} | S: {obs.suhu}</span>
-                   </div>
-                </TableCell>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="text-[10px] font-bold uppercase tracking-wider">
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
+          </TableHeader>
+          <TableBody>
+            {isLoading && observations.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-32 text-center">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <p className="text-xs text-muted-foreground font-medium">Memuat data partograf...</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : observations.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-32 text-center text-muted-foreground italic text-xs">
+                  Belum ada data observasi.
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id} className="hover:bg-primary/5">
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
             <TableRow className="bg-muted/10 border-t-2">
-               <TableCell colSpan={6}>
+               <TableCell colSpan={columns.length}>
                   <Button variant="ghost" size="sm" className="w-full h-10 gap-2 text-primary font-bold uppercase text-[10px] tracking-widest hover:bg-primary/10">
                     <Plus className="h-4 w-4" /> Tambah Observasi
                   </Button>

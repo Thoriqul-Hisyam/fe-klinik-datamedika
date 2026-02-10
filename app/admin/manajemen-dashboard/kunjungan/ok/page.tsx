@@ -1,11 +1,12 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Clock, Scissors, Search } from "lucide-react";
+import { Activity, Clock, Scissors, Search, Loader2 } from "lucide-react";
 import { DashboardFilter } from "@/components/admin/dashboard/dashboard-filter";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 
-const operationData = [
+const mockOperationData = [
   { date: "1 Jan", mayor: 2, minor: 5 },
   { date: "2 Jan", mayor: 3, minor: 4 },
   { date: "3 Jan", mayor: 1, minor: 6 },
@@ -15,16 +16,45 @@ const operationData = [
   { date: "7 Jan", mayor: 2, minor: 2 },
 ];
 
-const insuranceData = [
+const mockInsuranceData = [
     { name: "BPJS", value: 70, color: "#22c55e" },
     { name: "Umum", value: 20, color: "#3b82f6" },
     { name: "Asuransi Lain", value: 10, color: "#f97316" },
 ];
 
 export default function OKPage() {
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ["dashboard-ok"],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return {
+        operationData: mockOperationData,
+        insuranceData: mockInsuranceData,
+        stats: {
+          today: { total: 8, mayor: 3, minor: 5 },
+          thisMonth: 145,
+          avgDuration: "1.5 Jam",
+          utilization: "75%"
+        }
+      };
+    }
+  });
+
   const handleFilter = (from: Date | undefined, to: Date | undefined) => {
     console.log("Filtering OK data from:", from, "to:", to);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground font-medium">Memuat data dashboard...</span>
+      </div>
+    );
+  }
+
+  const { operationData, insuranceData, stats } = dashboardData!;
 
   return (
     <div className="space-y-6">
@@ -45,8 +75,8 @@ export default function OKPage() {
             <Scissors className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
-            <p className="text-xs text-muted-foreground">3 Mayor, 5 Minor</p>
+            <div className="text-2xl font-bold">{stats.today.total}</div>
+            <p className="text-xs text-muted-foreground">{stats.today.mayor} Mayor, {stats.today.minor} Minor</p>
           </CardContent>
         </Card>
         <Card>
@@ -55,7 +85,7 @@ export default function OKPage() {
             <Activity className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">145</div>
+            <div className="text-2xl font-bold">{stats.thisMonth}</div>
             <p className="text-xs text-muted-foreground">Total tindakan</p>
           </CardContent>
         </Card>
@@ -65,7 +95,7 @@ export default function OKPage() {
             <Clock className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1.5 Jam</div>
+            <div className="text-2xl font-bold">{stats.avgDuration}</div>
             <p className="text-xs text-muted-foreground">Per operasi</p>
           </CardContent>
         </Card>
@@ -75,7 +105,7 @@ export default function OKPage() {
             <Search className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">75%</div>
+            <div className="text-2xl font-bold">{stats.utilization}</div>
             <p className="text-xs text-muted-foreground">Efisiensi penggunaan OK</p>
           </CardContent>
         </Card>
@@ -121,7 +151,7 @@ export default function OKPage() {
                                 paddingAngle={5}
                                 dataKey="value"
                             >
-                                {insuranceData.map((entry, index) => (
+                                {insuranceData.map((entry: any, index: number) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>

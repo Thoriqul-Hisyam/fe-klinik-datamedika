@@ -1,18 +1,19 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Ambulance, AlertTriangle, Users, Clock, Siren } from "lucide-react";
+import { Ambulance, AlertTriangle, Users, Clock, Siren, Loader2 } from "lucide-react";
 import { DashboardFilter } from "@/components/admin/dashboard/dashboard-filter";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 
-const triageData = [
+const mockTriageData = [
   { name: "Merah", value: 5, color: "#ef4444" },
   { name: "Kuning", value: 12, color: "#eab308" },
   { name: "Hijau", value: 25, color: "#22c55e" },
   { name: "Hitam", value: 1, color: "#1f2937" },
 ];
 
-const hourlyCases = [
+const mockHourlyCases = [
   { name: "00-04", cases: 5 },
   { name: "04-08", cases: 8 },
   { name: "08-12", cases: 15 },
@@ -21,16 +22,48 @@ const hourlyCases = [
   { name: "20-24", cases: 10 },
 ];
 
-const insuranceData = [
+const mockInsuranceData = [
     { name: "BPJS", value: 30, color: "#22c55e" },
     { name: "Umum", value: 10, color: "#3b82f6" },
     { name: "Jasa Raharja", value: 3, color: "#ef4444" },
 ];
 
 export default function IGDPage() {
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ["dashboard-igd"],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return {
+        triageData: mockTriageData,
+        hourlyCases: mockHourlyCases,
+        insuranceData: mockInsuranceData,
+        stats: {
+          today: 43,
+          responseTime: "98%",
+          referred: 4,
+          occupancy: "65%",
+          occupiedBeds: 13,
+          totalBeds: 20
+        }
+      };
+    }
+  });
+
   const handleFilter = (from: Date | undefined, to: Date | undefined) => {
     console.log("Filtering IGD data from:", from, "to:", to);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground font-medium">Memuat data dashboard...</span>
+      </div>
+    );
+  }
+
+  const { triageData, hourlyCases, insuranceData, stats } = dashboardData!;
 
   return (
     <div className="space-y-6">
@@ -51,7 +84,7 @@ export default function IGDPage() {
             <Ambulance className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">43</div>
+            <div className="text-2xl font-bold">{stats.today}</div>
             <p className="text-xs text-muted-foreground">+12% dari minggu lalu</p>
           </CardContent>
         </Card>
@@ -61,7 +94,7 @@ export default function IGDPage() {
             <Siren className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">98%</div>
+            <div className="text-2xl font-bold">{stats.responseTime}</div>
             <p className="text-xs text-muted-foreground">Target tercapai</p>
           </CardContent>
         </Card>
@@ -71,7 +104,7 @@ export default function IGDPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4</div>
+            <div className="text-2xl font-bold">{stats.referred}</div>
             <p className="text-xs text-muted-foreground">Rujukan ke RS lain</p>
           </CardContent>
         </Card>
@@ -81,8 +114,8 @@ export default function IGDPage() {
             <Clock className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">65%</div>
-            <p className="text-xs text-muted-foreground">13 dari 20 Bed Terisi</p>
+            <div className="text-2xl font-bold">{stats.occupancy}</div>
+            <p className="text-xs text-muted-foreground">{stats.occupiedBeds} dari {stats.totalBeds} Bed Terisi</p>
           </CardContent>
         </Card>
       </div>
@@ -106,7 +139,7 @@ export default function IGDPage() {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {triageData.map((entry, index) => (
+                    {triageData.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -135,7 +168,7 @@ export default function IGDPage() {
                                 paddingAngle={5}
                                 dataKey="value"
                             >
-                                {insuranceData.map((entry, index) => (
+                                {insuranceData.map((entry: any, index: number) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>

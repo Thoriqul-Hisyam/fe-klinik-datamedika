@@ -1,11 +1,12 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bed, Users, Home, AlertCircle } from "lucide-react";
+import { Bed, Users, Home, AlertCircle, Loader2 } from "lucide-react";
 import { DashboardFilter } from "@/components/admin/dashboard/dashboard-filter";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 
-const roomData = [
+const mockRoomData = [
   { name: "Mawar", occupied: 15, capacity: 20 },
   { name: "Melati", occupied: 18, capacity: 20 },
   { name: "Anggrek", occupied: 10, capacity: 15 },
@@ -14,19 +15,43 @@ const roomData = [
   { name: "Dahlia", occupied: 5, capacity: 5 },
 ];
 
-const insuranceData = [
+const mockInsuranceData = [
     { name: "BPJS", value: 60, color: "#22c55e" },
     { name: "Umum", value: 25, color: "#3b82f6" },
     { name: "Asuransi Lain", value: 15, color: "#f97316" },
 ];
 
 export default function RawatInapRuanganPage() {
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ["dashboard-rawat-inap-ruangan"],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return {
+        roomData: mockRoomData,
+        insuranceData: mockInsuranceData,
+        isolation: 4
+      };
+    }
+  });
+
   const handleFilter = (from: Date | undefined, to: Date | undefined) => {
     console.log("Filtering Rawat Inap Ruangan data from:", from, "to:", to);
   };
 
-  const totalOccupied = roomData.reduce((acc, curr) => acc + curr.occupied, 0);
-  const totalCapacity = roomData.reduce((acc, curr) => acc + curr.capacity, 0);
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground font-medium">Memuat data dashboard...</span>
+      </div>
+    );
+  }
+
+  const { roomData, insuranceData, isolation } = dashboardData!;
+
+  const totalOccupied = roomData.reduce((acc: number, curr: any) => acc + curr.occupied, 0);
+  const totalCapacity = roomData.reduce((acc: number, curr: any) => acc + curr.capacity, 0);
   
   return (
     <div className="space-y-6">
@@ -67,7 +92,7 @@ export default function RawatInapRuanganPage() {
             <AlertCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4</div>
+            <div className="text-2xl font-bold">{isolation}</div>
             <p className="text-xs text-muted-foreground">Pasien isolasi</p>
           </CardContent>
         </Card>
@@ -123,7 +148,7 @@ export default function RawatInapRuanganPage() {
                                 paddingAngle={5}
                                 dataKey="value"
                             >
-                                {insuranceData.map((entry, index) => (
+                                {insuranceData.map((entry: any, index: number) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>

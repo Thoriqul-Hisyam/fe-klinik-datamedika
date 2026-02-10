@@ -1,6 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  getPaginationRowModel,
+  ColumnDef,
+} from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
 import {
   Search,
   ChevronLeft,
@@ -12,6 +20,7 @@ import {
   Volume2,
   X,
   UserCheck,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -136,36 +145,38 @@ export function EMRList({ serviceType, basePath }: EMRListProps) {
   const [filterPoli, setFilterPoli] = useState("Semua Poli");
   const [filterStatus, setFilterStatus] = useState("Semua Status");
   const [filterDokter, setFilterDokter] = useState("Semua Dokter");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
 
-  const filteredData = mockRegistrations.filter((reg) => {
-    const matchesServiceType = reg.tipe === serviceType;
-    const matchesSearch =
-      reg.nama.toLowerCase().includes(search.toLowerCase()) ||
-      reg.noRM.toLowerCase().includes(search.toLowerCase()) ||
-      reg.noReg.toLowerCase().includes(search.toLowerCase());
-    const matchesTanggal = (!dateFrom || reg.tanggal >= dateFrom) && (!dateTo || reg.tanggal <= dateTo);
-    const matchesPoli = filterPoli === "Semua Poli" || reg.poli === filterPoli;
-    const matchesStatus = filterStatus === "Semua Status" || reg.status === filterStatus;
-    const matchesDokter = filterDokter === "Semua Dokter" || reg.dokter === filterDokter;
+  const { data: registrations = [], isLoading } = useQuery({
+    queryKey: ["emr-list", serviceType, dateFrom, dateTo, search, filterPoli, filterStatus, filterDokter],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return mockRegistrations.filter((reg) => {
+        const matchesServiceType = reg.tipe === serviceType;
+        const matchesSearch =
+          reg.nama.toLowerCase().includes(search.toLowerCase()) ||
+          reg.noRM.toLowerCase().includes(search.toLowerCase()) ||
+          reg.noReg.toLowerCase().includes(search.toLowerCase());
+        const matchesTanggal = (!dateFrom || reg.tanggal >= dateFrom) && (!dateTo || reg.tanggal <= dateTo);
+        const matchesPoli = filterPoli === "Semua Poli" || reg.poli === filterPoli;
+        const matchesStatus = filterStatus === "Semua Status" || reg.status === filterStatus;
+        const matchesDokter = filterDokter === "Semua Dokter" || reg.dokter === filterDokter;
 
-    return matchesServiceType && matchesSearch && matchesTanggal && matchesPoli && matchesStatus && matchesDokter;
+        return matchesServiceType && matchesSearch && matchesTanggal && matchesPoli && matchesStatus && matchesDokter;
+      });
+    },
   });
-
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   const handleCallPatient = (nama: string) => {
     alert(`Memanggil pasien: ${nama}`);
   };
 
+  const today = useMemo(() => new Date().toISOString().split("T")[0], []);
+
   const hasActiveFilters = 
     search !== "" || 
-    dateFrom !== new Date().toISOString().split("T")[0] ||
-    dateTo !== new Date().toISOString().split("T")[0] ||
+    dateFrom !== today ||
+    dateTo !== today ||
     filterPoli !== "Semua Poli" ||
     filterStatus !== "Semua Status" ||
     filterDokter !== "Semua Dokter";
@@ -179,6 +190,107 @@ export function EMRList({ serviceType, basePath }: EMRListProps) {
     setFilterStatus("Semua Status");
     setFilterDokter("Semua Dokter");
   };
+
+  const columns = useMemo<ColumnDef<Registration>[]>(
+    () => [
+      {
+        accessorKey: "noReg",
+        header: "No. Registrasi",
+        cell: (info) => <span className="font-mono text-[11px]">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "noRM",
+        header: "No. RM",
+        cell: (info) => <span className="font-mono text-[11px] text-muted-foreground">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "nama",
+        header: "Pasien",
+        cell: (info) => {
+          const reg = info.row.original;
+          return (
+            <div>
+              <div className="font-semibold text-sm">{reg.nama}</div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Badge variant="outline" className="text-[9px] px-1 py-0 font-normal opacity-70">
+                  {reg.pembayaran}
+                </Badge>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        header: "Poli / Dokter",
+        cell: (info) => {
+          const reg = info.row.original;
+          return (
+            <div>
+              <div className="text-sm font-medium">{reg.poli}</div>
+              <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <User className="h-3 w-3" />
+                {reg.dokter}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: (info) => {
+          const status = info.getValue() as string;
+          const config = statusConfig[status] || { label: status, variant: "default" };
+          return (
+            <Badge variant={config.variant as any} className="text-[10px] px-2 py-0.5 font-medium rounded-full">
+              {config.label}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: () => <div className="text-right">Aksi</div>,
+        cell: (info) => {
+          const reg = info.row.original;
+          return (
+            <div className="flex items-center justify-end gap-2">
+              <Button 
+                size="sm" 
+                variant="secondary" 
+                className="h-8 gap-2 bg-primary/10 text-primary hover:bg-primary/20 border-none"
+                onClick={() => handleCallPatient(reg.nama)}
+              >
+                <Volume2 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Panggil</span>
+              </Button>
+              
+              <Button size="sm" variant="default" className="h-8 shadow-sm hover:shadow-md transition-all" asChild>
+                <Link href={`${basePath}/${reg.noReg}`}>
+                  <FileText className="h-3.5 w-3.5 mr-1.5" />
+                  RME
+                </Link>
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [basePath]
+  );
+
+  const table = useReactTable({
+    data: registrations,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    autoResetAll: false,
+    initialState: {
+      pagination: {
+        pageSize: 8,
+      },
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -215,9 +327,7 @@ export function EMRList({ serviceType, basePath }: EMRListProps) {
                     selected={dateFrom ? new Date(dateFrom) : undefined}
                     onSelect={(date) => {
                       setDateFrom(date ? format(date, "yyyy-MM-dd") : "");
-                      setCurrentPage(1);
                     }}
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -243,9 +353,7 @@ export function EMRList({ serviceType, basePath }: EMRListProps) {
                     selected={dateTo ? new Date(dateTo) : undefined}
                     onSelect={(date) => {
                       setDateTo(date ? format(date, "yyyy-MM-dd") : "");
-                      setCurrentPage(1);
                     }}
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -312,69 +420,44 @@ export function EMRList({ serviceType, basePath }: EMRListProps) {
           <div className="rounded-xl border border-muted-foreground/10 overflow-hidden bg-background/50">
             <Table>
               <TableHeader className="bg-muted/30">
-                <TableRow>
-                  <TableHead className="w-[180px] text-[11px] font-bold uppercase tracking-wider">No. Registrasi</TableHead>
-                  <TableHead className="w-[120px] text-[11px] font-bold uppercase tracking-wider">No. RM</TableHead>
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider">Pasien</TableHead>
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider">Poli / Dokter</TableHead>
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider">Status</TableHead>
-                  <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider">Aksi</TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id} className="text-[11px] font-bold uppercase tracking-wider">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
-                {paginatedData.length > 0 ? (
-                  paginatedData.map((reg) => {
-                    const config = statusConfig[reg.status] || { label: reg.status, variant: "default" };
-                    return (
-                      <TableRow key={reg.id} className="hover:bg-primary/5 transition-colors">
-                        <TableCell className="font-mono text-[11px]">{reg.noReg}</TableCell>
-                        <TableCell className="font-mono text-[11px] text-muted-foreground">{reg.noRM}</TableCell>
-                        <TableCell>
-                          <div className="font-semibold text-sm">{reg.nama}</div>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                             <Badge variant="outline" className="text-[9px] px-1 py-0 font-normal opacity-70">
-                               {reg.pembayaran}
-                             </Badge>
-                          </div>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground">Memuat data...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : table.getRowModel().rows.length > 0 ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id} className="hover:bg-primary/5 transition-colors">
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
-                        <TableCell>
-                          <div className="text-sm font-medium">{reg.poli}</div>
-                          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {reg.dokter}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={config.variant} className="text-[10px] px-2 py-0.5 font-medium rounded-full">
-                            {config.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="secondary" 
-                              className="h-8 gap-2 bg-primary/10 text-primary hover:bg-primary/20 border-none"
-                              onClick={() => handleCallPatient(reg.nama)}
-                            >
-                              <Volume2 className="h-3.5 w-3.5" />
-                              <span className="hidden sm:inline">Panggil</span>
-                            </Button>
-                            
-                            <Button size="sm" variant="default" className="h-8 shadow-sm hover:shadow-md transition-all" asChild>
-                              <Link href={`${basePath}/${reg.noReg}`}>
-                                <FileText className="h-3.5 w-3.5 mr-1.5" />
-                                RME
-                              </Link>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                      ))}
+                    </TableRow>
+                  ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic">
+                    <TableCell colSpan={columns.length} className="h-32 text-center text-muted-foreground italic">
                       Tidak ada pasien ditemukan untuk filter ini.
                     </TableCell>
                   </TableRow>
@@ -385,25 +468,27 @@ export function EMRList({ serviceType, basePath }: EMRListProps) {
           
           <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground px-2">
              <div>
-                Showing {paginatedData.length} of {filteredData.length} patients
+                Showing {table.getRowModel().rows.length} of {registrations.length} patients
              </div>
              <div className="flex items-center gap-2">
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   className="h-8 w-8 p-0" 
-                  onClick={() => setCurrentPage(p => Math.max(1, p-1))}
-                  disabled={currentPage === 1}
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="font-medium text-foreground">{currentPage}</span>
+                <span className="font-medium text-foreground">
+                  {table.getState().pagination.pageIndex + 1}
+                </span>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   className="h-8 w-8 p-0"
-                  onClick={() => setCurrentPage(p => p + 1)}
-                  disabled={paginatedData.length < itemsPerPage}
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>

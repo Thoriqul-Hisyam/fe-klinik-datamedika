@@ -1,5 +1,12 @@
 "use client";
 
+import React, { useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  ColumnDef,
+} from "@tanstack/react-table";
 import {
   Table,
   TableBody,
@@ -12,36 +19,92 @@ import { Badge } from "@/components/ui/badge";
 import { Distribusi } from "./data";
 
 export function DistribusiTable({ data }: { data: Distribusi[] }) {
+  const columns = useMemo<ColumnDef<Distribusi>[]>(
+    () => [
+      {
+        accessorKey: "noDistribusi",
+        header: "No Distribusi",
+        cell: (info) => <span className="font-medium">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "tanggal",
+        header: "Tanggal",
+      },
+      {
+        accessorKey: "dari",
+        header: "Dari",
+      },
+      {
+        accessorKey: "ke",
+        header: "Ke",
+      },
+      {
+        accessorKey: "item",
+        header: "Item",
+      },
+      {
+        accessorKey: "jumlah",
+        header: "Jumlah",
+        meta: {
+          className: "text-right",
+        },
+        cell: (info) => <div className="text-right">{info.getValue() as number}</div>,
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: (info) => {
+          const status = info.getValue() as string;
+          return (
+            <Badge variant={status === "Selesai" ? "default" : "secondary"}>
+              {status}
+            </Badge>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    autoResetAll: false,
+  });
+
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>No Distribusi</TableHead>
-            <TableHead>Tanggal</TableHead>
-            <TableHead>Dari</TableHead>
-            <TableHead>Ke</TableHead>
-            <TableHead>Item</TableHead>
-            <TableHead className="text-right">Jumlah</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="font-medium">{item.noDistribusi}</TableCell>
-              <TableCell>{item.tanggal}</TableCell>
-              <TableCell>{item.dari}</TableCell>
-              <TableCell>{item.ke}</TableCell>
-              <TableCell>{item.item}</TableCell>
-              <TableCell className="text-right">{item.jumlah}</TableCell>
-              <TableCell>
-                <Badge variant={item.status === "Selesai" ? "default" : "secondary"}>
-                  {item.status}
-                </Badge>
-              </TableCell>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id} className={(header.column.columnDef.meta as any)?.className}>
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
             </TableRow>
           ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.length > 0 ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id} className={(cell.column.columnDef.meta as any)?.className}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                Tidak ada data distribusi.
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </div>

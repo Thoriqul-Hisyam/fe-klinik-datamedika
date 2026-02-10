@@ -136,7 +136,7 @@ export default function PrescriptionHistoryPage() {
                     mode="single"
                     selected={filterDate ? new Date(filterDate) : undefined}
                     onSelect={(date) => setFilterDate(date ? format(date, "yyyy-MM-dd") : "")}
-                    initialFocus
+
                   />
                 </PopoverContent>
               </Popover>

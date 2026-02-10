@@ -199,7 +199,7 @@ export default function EMRListPage() {
                       setDateFrom(date ? format(date, "yyyy-MM-dd") : "");
                       setCurrentPage(1);
                     }}
-                    initialFocus
+
                   />
                 </PopoverContent>
               </Popover>
@@ -227,7 +227,7 @@ export default function EMRListPage() {
                       setDateTo(date ? format(date, "yyyy-MM-dd") : "");
                       setCurrentPage(1);
                     }}
-                    initialFocus
+
                   />
                 </PopoverContent>
               </Popover>

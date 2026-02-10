@@ -1,6 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  getPaginationRowModel,
+  ColumnDef,
+} from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
 import {
   Search,
   Filter,
@@ -16,6 +24,7 @@ import {
   Building2,
   CreditCard,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,11 +50,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { generateNoReg } from "@/lib/utils";
 import Link from "next/link";
 
 // Mock data for patient registrations
-const registrations = [
+const registrationsList = [
   {
     id: "REG001",
     noReg: "NoReg202601200830152024001",
@@ -120,6 +128,7 @@ const poliOptions = [
 
 const pembayaranOptions = ["Semua", "BPJS", "Umum", "Asuransi"];
 
+type PatientRegistration = typeof registrationsList[0];
 type RegistrationStatus = "terdaftar" | "dalam-antrian" | "selesai" | "batal";
 
 const statusConfig: Record<
@@ -137,37 +146,140 @@ export default function PendaftaranPasienPage() {
   const [filterPoli, setFilterPoli] = useState("Semua Poli");
   const [filterPembayaran, setFilterPembayaran] = useState("Semua");
   const [filterTanggal, setFilterTanggal] = useState(new Date().toISOString().split("T")[0]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
 
-  // Filter registrations
-  const filteredData = registrations.filter((reg) => {
-    const matchesSearch =
-      reg.nama.toLowerCase().includes(search.toLowerCase()) ||
-      reg.noRM.toLowerCase().includes(search.toLowerCase()) ||
-      reg.nik.includes(search);
-    const matchesPoli =
-      filterPoli === "Semua Poli" || reg.poli === filterPoli;
-    const matchesPembayaran =
-      filterPembayaran === "Semua" || reg.pembayaran === filterPembayaran;
-    const matchesTanggal =
-      !filterTanggal || reg.tanggal === filterTanggal;
-    return matchesSearch && matchesPoli && matchesPembayaran && matchesTanggal;
+  const { data: registrations = [], isLoading } = useQuery({
+    queryKey: ["pendaftaran-pasien", search, filterPoli, filterPembayaran, filterTanggal],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return registrationsList.filter((reg) => {
+        const matchesSearch =
+          reg.nama.toLowerCase().includes(search.toLowerCase()) ||
+          reg.noRM.toLowerCase().includes(search.toLowerCase()) ||
+          reg.nik.includes(search);
+        const matchesPoli =
+          filterPoli === "Semua Poli" || reg.poli === filterPoli;
+        const matchesPembayaran =
+          filterPembayaran === "Semua" || reg.pembayaran === filterPembayaran;
+        const matchesTanggal =
+          !filterTanggal || reg.tanggal === filterTanggal;
+        return matchesSearch && matchesPoli && matchesPembayaran && matchesTanggal;
+      });
+    },
   });
 
-  // Pagination
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+  const columns = useMemo<ColumnDef<PatientRegistration>[]>(
+    () => [
+      {
+        accessorKey: "noRM",
+        header: "No. RM",
+        cell: (info) => <span className="font-mono text-xs">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "nik",
+        header: "NIK",
+        cell: (info) => <span className="font-mono text-xs text-muted-foreground">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "nama",
+        header: "Nama Pasien",
+        cell: (info) => <span className="font-medium text-sm">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "tanggal",
+        header: "Tanggal",
+        cell: (info) => (
+          <span className="text-muted-foreground">
+            {new Date(info.getValue() as string).toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "poli",
+        header: "Poli",
+      },
+      {
+        accessorKey: "dokter",
+        header: "Dokter",
+        cell: (info) => <span className="text-muted-foreground hidden lg:table-cell">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "pembayaran",
+        header: "Pembayaran",
+        cell: (info) => (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+            {info.getValue() as string}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: (info) => {
+          const status = info.getValue() as RegistrationStatus;
+          const config = statusConfig[status];
+          return (
+            <Badge variant={config.variant} className="text-[10px] px-1.5 py-0">
+              {config.label}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "actions",
+        cell: (info) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-xs">Aksi</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Eye className="h-3.5 w-3.5 mr-2" />
+                Lihat Detail
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Edit className="h-3.5 w-3.5 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive">
+                <X className="h-3.5 w-3.5 mr-2" />
+                Batalkan
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      },
+    ],
+    []
   );
+
+  const table = useReactTable({
+    data: registrations,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    autoResetAll: false,
+    initialState: {
+      pagination: {
+        pageSize: 8,
+      },
+    },
+  });
 
   const clearFilters = () => {
     setSearch("");
     setFilterPoli("Semua Poli");
     setFilterPembayaran("Semua");
     setFilterTanggal("");
-    setCurrentPage(1);
   };
 
   const hasActiveFilters =
@@ -187,7 +299,7 @@ export default function PendaftaranPasienPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm"asChild>
+          <Button size="sm" asChild>
             <Link href="/admin/pasien/registrasi">
               <Users className="h-4 w-4 mr-2" />
               Daftar Pasien
@@ -212,7 +324,6 @@ export default function PendaftaranPasienPage() {
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
-                  setCurrentPage(1);
                 }}
                 className="pl-9 h-9"
               />
@@ -239,9 +350,7 @@ export default function PendaftaranPasienPage() {
                   selected={filterTanggal ? new Date(filterTanggal) : undefined}
                   onSelect={(date) => {
                     setFilterTanggal(date ? format(date, "yyyy-MM-dd") : "");
-                    setCurrentPage(1);
                   }}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>
@@ -260,7 +369,6 @@ export default function PendaftaranPasienPage() {
                     key={poli}
                     onClick={() => {
                       setFilterPoli(poli);
-                      setCurrentPage(1);
                     }}
                   >
                     {poli}
@@ -283,7 +391,6 @@ export default function PendaftaranPasienPage() {
                     key={option}
                     onClick={() => {
                       setFilterPembayaran(option);
-                      setCurrentPage(1);
                     }}
                   >
                     {option}
@@ -314,24 +421,34 @@ export default function PendaftaranPasienPage() {
           <div className="overflow-auto max-h-[calc(100vh-380px)]">
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs h-10">No. RM</TableHead>
-                  <TableHead className="text-xs h-10">NIK</TableHead>
-                  <TableHead className="text-xs h-10">Nama Pasien</TableHead>
-                  <TableHead className="text-xs h-10">Tanggal</TableHead>
-                  <TableHead className="text-xs h-10">Poli</TableHead>
-                  <TableHead className="text-xs h-10 hidden lg:table-cell">
-                    Dokter
-                  </TableHead>
-                  <TableHead className="text-xs h-10">Pembayaran</TableHead>
-                  <TableHead className="text-xs h-10">Status</TableHead>
-                  <TableHead className="text-xs h-10 w-10"></TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id} className="text-xs h-10">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
-                {paginatedData.length === 0 ? (
+                {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-32 text-center">
+                    <TableCell colSpan={columns.length} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground font-medium">Memuat data pendaftaran...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : table.getRowModel().rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-32 text-center">
                       <div className="text-muted-foreground">
                         <p className="font-medium">Tidak ada data</p>
                         <p className="text-sm">
@@ -341,81 +458,15 @@ export default function PendaftaranPasienPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedData.map((reg) => {
-                    const config = statusConfig[reg.status as RegistrationStatus];
-                    return (
-                      <TableRow key={reg.id} className="text-sm">
-                        <TableCell className="py-2.5 font-mono text-xs">
-                          {reg.noRM}
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id} className="text-sm">
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="py-2.5">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
-                        <TableCell className="py-2.5 font-mono text-xs text-muted-foreground">
-                          {reg.nik}
-                        </TableCell>
-                        <TableCell className="py-2.5 font-medium">
-                          {reg.nama}
-                        </TableCell>
-                        <TableCell className="py-2.5 text-muted-foreground">
-                          {new Date(reg.tanggal).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </TableCell>
-                        <TableCell className="py-2.5">{reg.poli}</TableCell>
-                        <TableCell className="py-2.5 text-muted-foreground hidden lg:table-cell">
-                          {reg.dokter}
-                        </TableCell>
-                        <TableCell className="py-2.5">
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] px-1.5 py-0 font-normal"
-                          >
-                            {reg.pembayaran}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-2.5">
-                          <Badge
-                            variant={config.variant}
-                            className="text-[10px] px-1.5 py-0"
-                          >
-                            {config.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-2.5">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                              >
-                                <MoreHorizontal className="h-3.5 w-3.5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel className="text-xs">
-                                Aksi
-                              </DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>
-                                <Eye className="h-3.5 w-3.5 mr-2" />
-                                Lihat Detail
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit className="h-3.5 w-3.5 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive">
-                                <X className="h-3.5 w-3.5 mr-2" />
-                                Batalkan
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                      ))}
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
@@ -424,29 +475,27 @@ export default function PendaftaranPasienPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <p className="text-xs text-muted-foreground">
-              Menampilkan {(currentPage - 1) * itemsPerPage + 1}-
-              {Math.min(currentPage * itemsPerPage, filteredData.length)} dari{" "}
-              {filteredData.length} data
+              Showing {table.getRowModel().rows.length} of {registrations.length} data
             </p>
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
               <span className="text-xs font-medium px-2">
-                {currentPage} / {totalPages || 1}
+                {table.getState().pagination.pageIndex + 1} / {table.getPageCount() || 1}
               </span>
               <Button
                 variant="outline"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>

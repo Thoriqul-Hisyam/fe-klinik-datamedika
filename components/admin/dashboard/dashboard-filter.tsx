@@ -26,13 +26,20 @@ export function DashboardFilter({
   const [fromDate, setFromDate] = React.useState<Date | undefined>(new Date())
   const [toDate, setToDate] = React.useState<Date | undefined>(new Date())
 
-  const handleFilter = () => {
+  // Ensure toDate is not before fromDate
+  React.useEffect(() => {
+    if (fromDate && toDate && toDate < fromDate) {
+      setToDate(fromDate)
+    }
+  }, [fromDate, toDate])
+
+  const handleFilter = React.useCallback(() => {
     if (onFilter) {
       onFilter(fromDate, toDate);
     } else {
         console.log("Filter clicked:", { fromDate, toDate });
     }
-  }
+  }, [onFilter, fromDate, toDate]);
 
   return (
     <div className={cn("flex flex-col sm:flex-row items-start sm:items-center gap-2", className)}>
@@ -58,7 +65,6 @@ export function DashboardFilter({
                 mode="single"
                 selected={fromDate}
                 onSelect={setFromDate}
-                initialFocus
               />
             </PopoverContent>
           </Popover>
@@ -88,7 +94,6 @@ export function DashboardFilter({
                 mode="single"
                 selected={toDate}
                 onSelect={setToDate}
-                initialFocus
                 disabled={(date) => fromDate ? date < fromDate : false}
               />
             </PopoverContent>

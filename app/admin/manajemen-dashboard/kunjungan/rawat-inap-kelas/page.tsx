@@ -1,11 +1,12 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BedDouble, Users, TrendingUp, BarChart3 } from "lucide-react";
+import { BedDouble, Users, TrendingUp, BarChart3, Loader2 } from "lucide-react";
 import { DashboardFilter } from "@/components/admin/dashboard/dashboard-filter";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 
-const classData = [
+const mockClassData = [
   { name: "VVIP", active: 2, total: 5 },
   { name: "VIP", active: 8, total: 10 },
   { name: "Kelas 1", active: 15, total: 20 },
@@ -15,7 +16,7 @@ const classData = [
   { name: "NICU", active: 3, total: 5 },
 ];
 
-const insuranceData = [
+const mockInsuranceData = [
     { name: "BPJS PBI", value: 45, color: "#22c55e" },
     { name: "BPJS Non-PBI", value: 30, color: "#16a34a" },
     { name: "Umum", value: 15, color: "#3b82f6" },
@@ -23,12 +24,38 @@ const insuranceData = [
 ];
 
 export default function RawatInapKelasPage() {
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ["dashboard-rawat-inap-kelas"],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return {
+        classData: mockClassData,
+        insuranceData: mockInsuranceData,
+        stats: {
+          dischargedToday: 8
+        }
+      };
+    }
+  });
+
   const handleFilter = (from: Date | undefined, to: Date | undefined) => {
     console.log("Filtering Rawat Inap Kelas data from:", from, "to:", to);
   };
 
-  const totalActive = classData.reduce((acc, curr) => acc + curr.active, 0);
-  const totalBeds = classData.reduce((acc, curr) => acc + curr.total, 0);
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground font-medium">Memuat data dashboard...</span>
+      </div>
+    );
+  }
+
+  const { classData, insuranceData, stats } = dashboardData!;
+
+  const totalActive = classData.reduce((acc: number, curr: any) => acc + curr.active, 0);
+  const totalBeds = classData.reduce((acc: number, curr: any) => acc + curr.total, 0);
   const occupancyRate = Math.round((totalActive / totalBeds) * 100);
 
   return (
@@ -80,7 +107,7 @@ export default function RawatInapKelasPage() {
             <BarChart3 className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{stats.dischargedToday}</div>
             <p className="text-xs text-muted-foreground">Rencana pulang</p>
           </CardContent>
         </Card>
@@ -134,7 +161,7 @@ export default function RawatInapKelasPage() {
                                 paddingAngle={5}
                                 dataKey="value"
                             >
-                                {insuranceData.map((entry, index) => (
+                                {insuranceData.map((entry: any, index: number) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>

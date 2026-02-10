@@ -1,5 +1,12 @@
 "use client";
 
+import React, { useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  ColumnDef,
+} from "@tanstack/react-table";
 import {
   Table,
   TableBody,
@@ -12,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Tag } from "lucide-react";
 import { Obat } from "./data";
-import { format } from "path";
 
 interface ObatTableProps {
   data: Obat[];
@@ -26,63 +32,141 @@ export function ObatTable({ data, onEdit, onDelete, onSetPrice }: ObatTableProps
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(val);
   };
 
+  const columns = useMemo<ColumnDef<Obat>[]>(
+    () => [
+      {
+        id: "index",
+        header: "No",
+        cell: (info) => info.row.index + 1,
+      },
+      {
+        accessorKey: "kodeObat",
+        header: "Kode",
+        cell: (info) => <span className="font-medium">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "namaObat",
+        header: "Nama Obat",
+      },
+      {
+        accessorKey: "kfa",
+        header: "KFA",
+      },
+      {
+        accessorKey: "hargaBeli",
+        header: "Harga Beli",
+        cell: (info) => formatCurrency(info.getValue() as number),
+      },
+      {
+        accessorKey: "tipeHarga",
+        header: "Tipe Harga",
+      },
+      {
+        header: "Harga Jual / Margin",
+        cell: (info) => {
+          const item = info.row.original;
+          return item.tipeHarga === "Fix"
+            ? formatCurrency(item.hargaJualFix || 0)
+            : item.tipeHarga === "Persentase"
+            ? `${item.marginPersentase}%`
+            : "-";
+        },
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: (info) => {
+          const status = info.getValue() as string;
+          return (
+            <Badge variant={status === "Show" ? "default" : "secondary"}>
+              {status}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "Aksi",
+        meta: {
+          className: "text-right",
+        },
+        cell: (info) => (
+          <div className="text-right space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onSetPrice(info.row.original)}
+              title="Set Price"
+            >
+              <Tag className="h-4 w-4 text-green-600" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onEdit(info.row.original)}
+              title="Edit"
+            >
+              <Edit className="h-4 w-4 text-blue-600" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDelete(info.row.original)}
+              title="Hapus"
+            >
+              <Trash2 className="h-4 w-4 text-red-600" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [onEdit, onDelete, onSetPrice]
+  );
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    autoResetAll: false,
+  });
+
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-[50px]">No</TableHead>
-            <TableHead>Kode</TableHead>
-            <TableHead>Nama Obat</TableHead>
-            <TableHead>KFA</TableHead>
-            <TableHead>Harga Beli</TableHead>
-            <TableHead>Tipe Harga</TableHead>
-            <TableHead>Harga Jual / Margin</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Aksi</TableHead>
-          </TableRow>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  className={(header.column.columnDef.meta as any)?.className}
+                >
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
         </TableHeader>
         <TableBody>
-          {data.length === 0 ? (
+          {table.getRowModel().rows.length > 0 ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell
+                    key={cell.id}
+                    className={(cell.column.columnDef.meta as any)?.className}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
             <TableRow>
-              <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
+              <TableCell colSpan={columns.length} className="h-24 text-center">
                 Tidak ada data obat.
               </TableCell>
             </TableRow>
-          ) : (
-            data.map((item, index) => (
-              <TableRow key={item.id}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell className="font-medium">{item.kodeObat}</TableCell>
-                <TableCell>{item.namaObat}</TableCell>
-                <TableCell>{item.kfa}</TableCell>
-                <TableCell>{formatCurrency(item.hargaBeli)}</TableCell>
-                <TableCell>{item.tipeHarga}</TableCell>
-                <TableCell>
-                  {item.tipeHarga === "Fix" 
-                    ? formatCurrency(item.hargaJualFix || 0)
-                    : item.tipeHarga === "Persentase"
-                    ? `${item.marginPersentase}%`
-                    : "-"}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={item.status === "Show" ? "default" : "secondary"}>
-                    {item.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button variant="ghost" size="icon" onClick={() => onSetPrice(item)} title="Set Price">
-                    <Tag className="h-4 w-4 text-green-600" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(item)} title="Edit">
-                    <Edit className="h-4 w-4 text-blue-600" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onDelete(item)} title="Hapus">
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
           )}
         </TableBody>
       </Table>

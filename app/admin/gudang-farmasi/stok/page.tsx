@@ -1,18 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { dummyStocks } from "@/components/admin/gudang-farmasi/stok/data";
 import { StokTable } from "@/components/admin/gudang-farmasi/stok/stok-table";
 
 export default function MedicineStokPage() {
   const [query, setQuery] = useState("");
-  const filteredData = dummyStocks.filter(s => 
-    s.namaObat.toLowerCase().includes(query.toLowerCase()) || 
-    s.kodeObat.toLowerCase().includes(query.toLowerCase())
-  );
+
+  const { data: stocks = [], isLoading } = useQuery({
+    queryKey: ["gudang-stok", query],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return dummyStocks.filter(s => 
+        s.namaObat.toLowerCase().includes(query.toLowerCase()) || 
+        s.kodeObat.toLowerCase().includes(query.toLowerCase())
+      );
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -40,7 +49,14 @@ export default function MedicineStokPage() {
           <CardTitle>Daftar Stok</CardTitle>
         </CardHeader>
         <CardContent>
-          <StokTable data={filteredData} />
+          {isLoading ? (
+            <div className="flex h-24 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">Memuat data stok...</span>
+            </div>
+          ) : (
+            <StokTable data={stocks} />
+          )}
         </CardContent>
       </Card>
     </div>

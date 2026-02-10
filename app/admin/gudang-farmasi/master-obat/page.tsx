@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { dummyObat, Obat } from "@/components/admin/gudang-farmasi/master-obat/data";
 import { ObatTable } from "@/components/admin/gudang-farmasi/master-obat/obat-table";
 import { ObatFormDialog } from "@/components/admin/gudang-farmasi/master-obat/obat-form-dialog";
@@ -10,10 +11,20 @@ import { SetPriceDialog } from "@/components/admin/gudang-farmasi/master-obat/se
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function MasterObatPage() {
-  const [data, setData] = useState<Obat[]>(dummyObat);
+  const [data, setData] = useState<Obat[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [selectedObat, setSelectedObat] = useState<Obat | null>(null);
+
+  const { isLoading } = useQuery({
+    queryKey: ["master-obat"],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setData(dummyObat);
+      return dummyObat;
+    },
+  });
 
   const handleAdd = () => {
     setSelectedObat(null);
@@ -44,7 +55,6 @@ export default function MasterObatPage() {
       // Add new
       setData(prev => [...prev, obat]);
     }
-    // Close dialog implies success
   };
 
   return (
@@ -55,9 +65,6 @@ export default function MasterObatPage() {
           <p className="text-muted-foreground">
             Kelola data obat, update harga, dan pencarian KFA.
           </p>
-        </div>
-        <div className="flex items-center space-x-2">
-            {/* Action buttons could go here */}
         </div>
       </div>
 
@@ -70,12 +77,19 @@ export default function MasterObatPage() {
             </Button>
         </CardHeader>
         <CardContent>
+          {isLoading ? (
+            <div className="flex h-48 items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">Memuat data obat...</span>
+            </div>
+          ) : (
              <ObatTable 
                 data={data}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onSetPrice={handleSetPrice}
             />
+          )}
         </CardContent>
       </Card>
 

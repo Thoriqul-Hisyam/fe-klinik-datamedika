@@ -1,6 +1,14 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  ColumnDef,
+  getPaginationRowModel,
+} from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
 import {
   Search,
   MoreHorizontal,
@@ -17,6 +25,7 @@ import {
   Pill,
   User,
   Calendar,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,12 +44,35 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Drawer } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
+// Types
+type PrescriptionStatus = "pending" | "processing" | "completed" | "cancelled";
+
+interface PrescriptionItem {
+  nama: string;
+  dosis: string;
+  jumlah: number;
+  stok: number;
+  satuan: string;
+}
+
+interface Prescription {
+  id: string;
+  noResep: string;
+  noRM: string;
+  pasien: string;
+  dokter: string;
+  poli: string;
+  waktu: string;
+  status: PrescriptionStatus;
+  items: PrescriptionItem[];
+}
+
 // Mock prescriptions data
-const prescriptions = [
+const mockPrescriptions: Prescription[] = [
   {
     id: "RX001",
     noResep: "RX-2026-0120-001",
@@ -128,8 +160,6 @@ const prescriptions = [
   },
 ];
 
-type PrescriptionStatus = "pending" | "processing" | "completed" | "cancelled";
-
 const statusConfig: Record<
   PrescriptionStatus,
   { label: string; variant: "default" | "secondary" | "success" | "destructive"; icon: typeof Clock }
@@ -142,67 +172,181 @@ const statusConfig: Record<
 
 export default function FarmasiPage() {
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedPrescription, setSelectedPrescription] = useState<typeof prescriptions[0] | null>(null);
-  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const itemsPerPage = 10;
+  const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
+  const [rowSelection, setRowSelection] = useState({});
 
-  // Filter prescriptions
-  const filteredData = prescriptions.filter((rx) => {
-    const matchesSearch =
-      rx.pasien.toLowerCase().includes(search.toLowerCase()) ||
-      rx.noResep.toLowerCase().includes(search.toLowerCase()) ||
-      rx.noRM.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || rx.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const { data: prescriptionsData = [], isLoading } = useQuery({
+    queryKey: ["pharmacy-prescriptions", search, statusFilter],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return mockPrescriptions.filter((rx) => {
+        const matchesSearch =
+          rx.pasien.toLowerCase().includes(search.toLowerCase()) ||
+          rx.noResep.toLowerCase().includes(search.toLowerCase()) ||
+          rx.noRM.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = statusFilter === "all" || rx.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
+    },
   });
 
-  // Pagination
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const columns = useMemo<ColumnDef<Prescription>[]>(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={table.getIsAllPageRowsSelected()}
+            onChange={table.getToggleAllPageRowsSelectedHandler()}
+            className="h-4 w-4 rounded border-gray-300"
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+            className="h-4 w-4 rounded border-gray-300"
+          />
+        ),
+      },
+      {
+        accessorKey: "noResep",
+        header: "No. Resep",
+        cell: (info) => <span className="font-mono text-xs">{info.getValue() as string}</span>,
+      },
+      {
+        accessorKey: "pasien",
+        header: "Pasien",
+        cell: (info) => {
+          const rx = info.row.original;
+          return (
+            <div>
+              <p className="font-medium">{rx.pasien}</p>
+              <p className="text-xs text-muted-foreground font-mono">{rx.noRM}</p>
+            </div>
+          );
+        },
+      },
+      {
+        header: "Poli / Dokter",
+        cell: (info) => {
+          const rx = info.row.original;
+          return (
+            <div className="text-muted-foreground">
+              <p className="text-xs">{rx.poli}</p>
+              <p className="text-xs">{rx.dokter}</p>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "waktu",
+        header: "Waktu",
+        cell: (info) => <span className="text-xs text-muted-foreground">{info.getValue() as string}</span>,
+      },
+      {
+        header: "Item",
+        cell: (info) => (
+          <Badge variant="outline" className="text-[10px]">
+            {info.row.original.items.length} item
+          </Badge>
+        ),
+      },
+      {
+        header: "Stok",
+        cell: (info) => {
+          const items = info.row.original.items;
+          const outOfStock = items.some((i) => i.stok === 0);
+          const lowStock = items.some((i) => i.stok < i.jumlah);
 
-  // Check if prescription has low stock items
-  const hasLowStock = (items: typeof prescriptions[0]["items"]) =>
-    items.some((item) => item.stok < item.jumlah);
-
-  const hasOutOfStock = (items: typeof prescriptions[0]["items"]) =>
-    items.some((item) => item.stok === 0);
-
-  // Keyboard navigation
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent, rx: typeof prescriptions[0]) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        setSelectedPrescription(rx);
-      }
-    },
+          if (outOfStock) {
+            return (
+              <Badge variant="destructive" className="text-[10px] gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Habis
+              </Badge>
+            );
+          }
+          if (lowStock) {
+            return (
+              <Badge variant="secondary" className="text-[10px] gap-1 text-orange-600 bg-orange-50">
+                <AlertTriangle className="h-3 w-3" />
+                Terbatas
+              </Badge>
+            );
+          }
+          return (
+            <Badge variant="secondary" className="text-[10px] text-green-600 bg-green-50">
+              OK
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: (info) => {
+          const status = info.getValue() as PrescriptionStatus;
+          const config = statusConfig[status];
+          return (
+            <Badge variant={config.variant} className="text-[10px] px-1.5 py-0 gap-1">
+              <config.icon className="h-3 w-3" />
+              {config.label}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "actions",
+        cell: (info) => (
+          <div onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setSelectedPrescription(info.row.original)}>
+                  <Eye className="h-3.5 w-3.5 mr-2" />
+                  Lihat Detail
+                </DropdownMenuItem>
+                {info.row.original.status === "pending" && (
+                  <DropdownMenuItem>
+                    <Check className="h-3.5 w-3.5 mr-2" />
+                    Proses Resep
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem>
+                  <Printer className="h-3.5 w-3.5 mr-2" />
+                  Cetak
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ),
+      },
+    ],
     []
   );
 
-  // Toggle row selection
-  const toggleRowSelection = (id: string) => {
-    setSelectedRows((prev) =>
-      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
-    );
-  };
+  const table = useReactTable({
+    data: prescriptionsData,
+    columns,
+    state: {
+      rowSelection,
+    },
+    onRowSelectionChange: setRowSelection,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    autoResetAll: false,
+  });
 
-  // Toggle all rows
-  const toggleAllRows = () => {
-    if (selectedRows.length === paginatedData.length) {
-      setSelectedRows([]);
-    } else {
-      setSelectedRows(paginatedData.map((rx) => rx.id));
-    }
-  };
-
-  // Bulk actions
-  const pendingSelected = selectedRows.filter(
-    (id) => prescriptions.find((p) => p.id === id)?.status === "pending"
-  );
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
 
   return (
     <div className="space-y-6">
@@ -217,11 +361,11 @@ export default function FarmasiPage() {
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="gap-1">
             <Clock className="h-3 w-3" />
-            {prescriptions.filter((p) => p.status === "pending").length} Menunggu
+            {mockPrescriptions.filter((p) => p.status === "pending").length} Menunggu
           </Badge>
           <Badge variant="outline" className="gap-1">
             <Package className="h-3 w-3" />
-            {prescriptions.filter((p) => p.status === "processing").length} Diproses
+            {mockPrescriptions.filter((p) => p.status === "processing").length} Diproses
           </Badge>
         </div>
       </div>
@@ -236,7 +380,7 @@ export default function FarmasiPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Cari resep, pasien, RM... (Ctrl+K)"
+                  placeholder="Cari resep, pasien, RM..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9 h-9"
@@ -273,15 +417,9 @@ export default function FarmasiPage() {
                 <span className="text-sm text-muted-foreground">
                   {selectedRows.length} dipilih
                 </span>
-                {pendingSelected.length > 0 && (
-                  <Button size="sm" variant="outline" className="h-8">
-                    <Check className="h-3.5 w-3.5 mr-1" />
-                    Proses ({pendingSelected.length})
-                  </Button>
-                )}
                 <Button size="sm" variant="outline" className="h-8">
                   <Printer className="h-3.5 w-3.5 mr-1" />
-                  Cetak
+                  Cetak Massal
                 </Button>
               </div>
             )}
@@ -295,145 +433,50 @@ export default function FarmasiPage() {
           <div className="overflow-auto">
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-10 h-10">
-                    <input
-                      type="checkbox"
-                      checked={
-                        selectedRows.length === paginatedData.length &&
-                        paginatedData.length > 0
-                      }
-                      onChange={toggleAllRows}
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
-                  </TableHead>
-                  <TableHead className="text-xs h-10">No. Resep</TableHead>
-                  <TableHead className="text-xs h-10">Pasien</TableHead>
-                  <TableHead className="text-xs h-10">Poli / Dokter</TableHead>
-                  <TableHead className="text-xs h-10">Waktu</TableHead>
-                  <TableHead className="text-xs h-10">Item</TableHead>
-                  <TableHead className="text-xs h-10">Stok</TableHead>
-                  <TableHead className="text-xs h-10">Status</TableHead>
-                  <TableHead className="text-xs h-10 w-10"></TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id} className="text-xs h-10">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
-                {paginatedData.map((rx) => {
-                  const config = statusConfig[rx.status as PrescriptionStatus];
-                  const isSelected = selectedRows.includes(rx.id);
-                  const lowStock = hasLowStock(rx.items);
-                  const outOfStock = hasOutOfStock(rx.items);
-
-                  return (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground">Memuat data resep...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : table.getRowModel().rows.length > 0 ? (
+                  table.getRowModel().rows.map((row) => (
                     <TableRow
-                      key={rx.id}
-                      tabIndex={0}
-                      onKeyDown={(e) => handleKeyDown(e, rx)}
+                      key={row.id}
                       className={cn(
-                        "text-sm cursor-pointer focus:bg-muted focus:outline-none",
-                        isSelected && "bg-muted/50"
+                        "text-sm cursor-pointer hover:bg-muted/50 transition-colors",
+                        row.getIsSelected() && "bg-muted"
                       )}
-                      onClick={() => setSelectedPrescription(rx)}
+                      onClick={() => setSelectedPrescription(row.original)}
                     >
-                      <TableCell
-                        className="py-2.5"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleRowSelection(rx.id)}
-                          className="h-4 w-4 rounded border-gray-300"
-                        />
-                      </TableCell>
-                      <TableCell className="py-2.5 font-mono text-xs">
-                        {rx.noResep}
-                      </TableCell>
-                      <TableCell className="py-2.5">
-                        <div>
-                          <p className="font-medium">{rx.pasien}</p>
-                          <p className="text-xs text-muted-foreground font-mono">
-                            {rx.noRM}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-2.5 text-muted-foreground">
-                        <div>
-                          <p className="text-xs">{rx.poli}</p>
-                          <p className="text-xs">{rx.dokter}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-2.5 text-muted-foreground">
-                        {rx.waktu}
-                      </TableCell>
-                      <TableCell className="py-2.5">
-                        <Badge variant="outline" className="text-[10px]">
-                          {rx.items.length} item
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-2.5">
-                        {outOfStock ? (
-                          <Badge variant="destructive" className="text-[10px] gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            Habis
-                          </Badge>
-                        ) : lowStock ? (
-                          <Badge variant="secondary" className="text-[10px] gap-1 text-orange-600 bg-orange-50">
-                            <AlertTriangle className="h-3 w-3" />
-                            Terbatas
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-[10px] text-green-600 bg-green-50">
-                            OK
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-2.5">
-                        <Badge
-                          variant={config.variant}
-                          className="text-[10px] px-1.5 py-0 gap-1"
-                        >
-                          <config.icon className="h-3 w-3" />
-                          {config.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell
-                        className="py-2.5"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                            >
-                              <MoreHorizontal className="h-3.5 w-3.5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => setSelectedPrescription(rx)}
-                            >
-                              <Eye className="h-3.5 w-3.5 mr-2" />
-                              Lihat Detail
-                            </DropdownMenuItem>
-                            {rx.status === "pending" && (
-                              <DropdownMenuItem>
-                                <Check className="h-3.5 w-3.5 mr-2" />
-                                Proses Resep
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem>
-                              <Printer className="h-3.5 w-3.5 mr-2" />
-                              Cetak
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="py-2.5">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
                     </TableRow>
-                  );
-                })}
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-64 text-center text-muted-foreground">
+                      Tidak ada resep ditemukan.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -441,29 +484,27 @@ export default function FarmasiPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <p className="text-xs text-muted-foreground">
-              {filteredData.length} resep
+              {table.getFilteredRowModel().rows.length} resep total
             </p>
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
               <span className="text-xs font-medium px-2">
-                {currentPage} / {totalPages || 1}
+                {table.getState().pagination.pageIndex + 1} / {table.getPageCount() || 1}
               </span>
               <Button
                 variant="outline"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
@@ -481,7 +522,6 @@ export default function FarmasiPage() {
       >
         {selectedPrescription && (
           <div className="p-4 space-y-6">
-            {/* Patient Info */}
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -510,22 +550,19 @@ export default function FarmasiPage() {
               </div>
             </div>
 
-            {/* Status */}
             <div className="flex items-center justify-between py-3 border-y">
               <span className="text-sm text-muted-foreground">Status</span>
               <Badge
-                variant={statusConfig[selectedPrescription.status as PrescriptionStatus].variant}
+                variant={statusConfig[selectedPrescription.status].variant}
                 className="gap-1"
               >
-                {React.createElement(
-                  statusConfig[selectedPrescription.status as PrescriptionStatus].icon,
-                  { className: "h-3 w-3" }
-                )}
-                {statusConfig[selectedPrescription.status as PrescriptionStatus].label}
+                {React.createElement(statusConfig[selectedPrescription.status].icon, {
+                  className: "h-3 w-3",
+                })}
+                {statusConfig[selectedPrescription.status].label}
               </Badge>
             </div>
 
-            {/* Items */}
             <div>
               <h3 className="text-sm font-medium mb-3">Daftar Obat</h3>
               <div className="space-y-3">
@@ -553,12 +590,8 @@ export default function FarmasiPage() {
                           <Badge variant="destructive" className="text-[10px]">
                             Stok Habis
                           </Badge>
-                        ) : isLow ? (
-                          <Badge variant="outline" className="text-[10px] text-orange-600">
-                            Stok: {item.stok}
-                          </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] text-green-600">
+                          <Badge variant="outline" className={cn("text-[10px]", isLow ? "text-orange-600" : "text-green-600")}>
                             Stok: {item.stok}
                           </Badge>
                         )}
@@ -569,7 +602,6 @@ export default function FarmasiPage() {
               </div>
             </div>
 
-            {/* Actions */}
             <div className="pt-4 border-t space-y-2">
               {selectedPrescription.status === "pending" && (
                 <Button className="w-full">

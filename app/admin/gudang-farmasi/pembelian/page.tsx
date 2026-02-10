@@ -1,19 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { dummyPembelian } from "@/components/admin/gudang-farmasi/pembelian/data";
 import { PembelianTable } from "@/components/admin/gudang-farmasi/pembelian/pembelian-table";
 
 export default function PembelianObatPage() {
   const [query, setQuery] = useState("");
-  const filteredData = dummyPembelian.filter(p => 
-    p.noPO.toLowerCase().includes(query.toLowerCase()) || 
-    p.supplier.toLowerCase().includes(query.toLowerCase())
-  );
+
+  const { data: pembelians = [], isLoading } = useQuery({
+    queryKey: ["gudang-pembelian", query],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return dummyPembelian.filter(p => 
+        p.noPO.toLowerCase().includes(query.toLowerCase()) || 
+        p.supplier.toLowerCase().includes(query.toLowerCase())
+      );
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -47,7 +56,14 @@ export default function PembelianObatPage() {
           <CardTitle>Riwayat Pembelian</CardTitle>
         </CardHeader>
         <CardContent>
-          <PembelianTable data={filteredData} />
+          {isLoading ? (
+            <div className="flex h-24 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">Memuat data pembelian...</span>
+            </div>
+          ) : (
+            <PembelianTable data={pembelians} />
+          )}
         </CardContent>
       </Card>
     </div>

@@ -200,7 +200,7 @@ export default function FinanceReportPage() {
                 mode="single"
                 selected={dateFrom ? new Date(dateFrom) : undefined}
                 onSelect={(date) => setDateFrom(date ? format(date, "yyyy-MM-dd") : "")}
-                initialFocus
+
               />
             </PopoverContent>
           </Popover>
@@ -223,7 +223,7 @@ export default function FinanceReportPage() {
                 mode="single"
                 selected={dateTo ? new Date(dateTo) : undefined}
                 onSelect={(date) => setDateTo(date ? format(date, "yyyy-MM-dd") : "")}
-                initialFocus
+
               />
             </PopoverContent>
           </Popover>
